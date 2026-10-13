@@ -1,0 +1,15 @@
+.env
+.env.*
+!.env.example
+.venv/
+.venv.backup*/
+venv/
+__pycache__/
+*.pyc
+models/
+data/
+*.log
+
+node_modules/
+
+runtime/

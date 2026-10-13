@@ -1,0 +1,4 @@
+MARVIN v0.6.1: extraia O CONTEUDO DESTE ZIP na pasta MARVIN_v0.6 existente.
+Permita substituir local_model\install.ps1.
+Em seguida execute INSTALAR_SERVIDOR_IA.bat novamente.
+O arquivo .env e a pasta data nao sao alterados.

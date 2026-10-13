@@ -1,0 +1,1 @@
+MARVIN v0.7.0 — tarefas persistentes, continuidade, ferramentas verificadas e recuperação

@@ -1,0 +1,14 @@
+{
+  "executed_at_utc": "2026-10-13T18:40:01.492988+00:00",
+  "python": "3.14.5",
+  "system": "Windows",
+  "google_genai": "2.8.0",
+  "tests_run": 173,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "successful": true,
+  "duration_seconds": 12.787,
+  "scope": "offline automated tests; real temporary files, child processes and withdrawn Tk; model/network/audio adapters simulated",
+  "output": ".............................................................................................................................................................................\n----------------------------------------------------------------------\nRan 173 tests in 12.729s\n\nOK\n"
+}
