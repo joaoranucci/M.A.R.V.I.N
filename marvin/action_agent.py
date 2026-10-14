@@ -303,7 +303,7 @@ class ActionAgent:
             local = self._offline(question, task_id, emit)
             if local:
                 return local
-            return self._finish("failed", question, "Modo local: comandos básicos e memória disponíveis. Configure GEMINI_API_KEY para pedidos complexos.")
+            return self._finish("failed", question, "Modo local: configure a chave do provedor de IA selecionado para pedidos complexos.")
         from google.genai import types
         relevant = getattr(self.memory, "relevant", None)
         facts = relevant(question, limit=8) if relevant else self.memory.facts(limit=8)
@@ -361,7 +361,7 @@ class ActionAgent:
                     local = self._offline(question, task_id, emit)
                     if local:
                         return local
-                return self._finish("failed", question, "Não consegui acessar os modelos Gemini disponíveis. " + "; ".join(errors)[:750])
+                return self._finish("failed", question, "Não consegui acessar o provedor de IA selecionado. " + "; ".join(errors)[:750])
             calls = list(getattr(response, "function_calls", None) or [])
             if not calls:
                 answer = (getattr(response, "text", None) or "Não recebi resposta conclusiva do modelo.").strip()

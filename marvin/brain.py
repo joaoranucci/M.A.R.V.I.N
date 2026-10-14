@@ -13,7 +13,7 @@ from .memory import Memory
 SYSTEM = (
     "Você é MARVIN, um assistente pessoal brasileiro, inteligente, prático e natural. "
     "Responda em português do Brasil, de modo curto e claro para ser falado em voz alta. "
-    "Você é um programa local Python rodando no Windows, integrado ao Gemini. "
+    "Você é um programa local Python rodando no Windows, integrado a um provedor de IA. "
     "Não afirme que executou operações sem confirmação de ferramentas locais. "
     "Pesquisa Google no navegador não equivale a ter lido os resultados. "
     "Use informações atuais somente quando uma ferramenta retornar fonte e evidência de leitura. "
@@ -57,7 +57,7 @@ def retry_wait(attempt: int, cancel_event=None):
 
 def safe_error_detail(error: Exception) -> str:
     detail = str(error)
-    for key in (os.getenv("GEMINI_API_KEY", ""), os.getenv("GOOGLE_API_KEY", "")):
+    for key in (os.getenv("GEMINI_API_KEY", ""), os.getenv("GOOGLE_API_KEY", ""), os.getenv("AIML_API_KEY", "")):
         if key:
             detail = detail.replace(key, "[CHAVE_OCULTA]")
     detail = re.sub(r"(?:AIza|AQ__)[0-9a-zA-Z_-]{16,}", "[CHAVE_OCULTA]", detail)
@@ -94,6 +94,8 @@ def model_restricted(error: Exception) -> bool:
 
 def friendly_error(error: Exception) -> str:
     code = error_code(error)
+    if getattr(error, 'provider', None) == 'aiml':
+        return f"AIML API (HTTP {code or '?'}): {safe_error_detail(error)}"
     message = str(error).lower()
     if invalid_key(error):
         return ("Erro 401: chave do Gemini inválida ou revogada. Abra https://aistudio.google.com/apikey "
@@ -120,13 +122,18 @@ def friendly_error(error: Exception) -> str:
 class Brain:
     def __init__(self, memory: Memory, client=None):
         self.memory = memory
-        self.api_key = os.getenv("GEMINI_API_KEY", "").strip()
-        self.configured_model = os.getenv("GEMINI_MODEL", FREE_CANDIDATES[0]).strip()
+        self.provider = os.getenv('MARVIN_LLM_PROVIDER', 'gemini').strip().lower()
+        if self.provider not in ('gemini', 'aiml'):
+            raise ValueError('MARVIN_LLM_PROVIDER deve ser gemini ou aiml.')
+        self.key_name = 'AIML_API_KEY' if self.provider == 'aiml' else 'GEMINI_API_KEY'
+        self.api_key = os.getenv(self.key_name, "").strip()
+        self.configured_model = (os.getenv('AIML_MODEL', 'openai/gpt-5-5').strip() if self.provider == 'aiml'
+                                 else os.getenv("GEMINI_MODEL", FREE_CANDIDATES[0]).strip())
         self.active_model = None
         self._client = client
         self.configuration_warning = ("Modelo configurado fora da política gratuita: "
             + self.configured_model + ". Usando somente candidatos elegíveis documentados."
-            if self.configured_model not in FREE_CANDIDATES else "")
+            if self.provider == 'gemini' and self.configured_model not in FREE_CANDIDATES else "")
         self.capabilities = {"text": True, "tools": True, "vision": False,
                              "search": True, "audio": False, "offline_llm": False}
         self.last_ask_ok = False
@@ -137,6 +144,10 @@ class Brain:
 
     def _get_client(self):
         if self._client is None:
+            if self.provider == 'aiml':
+                from .aiml import AimlClient
+                self._client = AimlClient(self.api_key, self.request_timeout_ms)
+                return self._client
             from google import genai
             from google.genai import types
             self._client = genai.Client(api_key=self.api_key, vertexai=False,
@@ -165,6 +176,8 @@ class Brain:
             self._client.close()
 
     def thinking_settings(self, types, question=None):
+        if self.provider == 'aiml':
+            return {}
         mode = os.getenv("MARVIN_REASONING", "equilibrado")
         level = {"rapido": "minimal", "equilibrado": "medium", "profundo": "high"}.get(mode, "medium")
         if mode == "equilibrado" and question is not None:
@@ -174,6 +187,8 @@ class Brain:
         return {}
 
     def _models(self):
+        if self.provider == 'aiml':
+            return [self.configured_model]
         configured = self.configured_model
         if configured in FREE_CANDIDATES:
             return [configured] + [m for m in FREE_CANDIDATES if m != configured]
@@ -189,6 +204,15 @@ class Brain:
 
     def diagnose(self) -> str:
         """Live test, not just models.list(): a model may list but reject generation."""
+        if self.provider == 'aiml':
+            try:
+                response = self.generate(self.configured_model, 'Responda somente OK.', {'max_output_tokens': 128})
+                if not response.text.strip():
+                    return 'AIML retornou resposta vazia.'
+                self.active_model = self.configured_model
+                return f'AIML: geração funcionando com {self.active_model}.'
+            except Exception as exc:
+                return friendly_error(exc)
         if not self.api_key or self.api_key == "COLE_SUA_CHAVE_AQUI":
             return "GEMINI_API_KEY não configurada no .env. Crie uma chave em https://aistudio.google.com/apikey."
         try:
@@ -209,9 +233,10 @@ class Brain:
                     model=name, contents="Responda somente OK.",
                     config={"max_output_tokens": 32, "temperature": 0},
                 )
-                if response is None:
+                if response is None or not (getattr(response, "text", None) or "").strip():
                     notes.append(f"{name}: API retornou resposta vazia.")
                     continue
+                self.active_model = name
                 notes.append(f"{name}: geração funcionando! O MARVIN pode conversar com este modelo.")
                 return "\n".join(notes)
             except Exception as exc:
@@ -224,7 +249,7 @@ class Brain:
     def ask(self, question: str, search: bool = False, cancel_event=None) -> tuple[str, list[tuple[str, str]]]:
         self.last_ask_ok = False
         if not self.api_key or self.api_key == "COLE_SUA_CHAVE_AQUI":
-            return "Configure GEMINI_API_KEY no .env. Comandos do PC e pesquisas no navegador funcionam sem ela.", []
+            return f"Configure {self.key_name} no .env. Comandos locais continuam disponíveis.", []
         try:
             from google.genai import types
             check_cancel(cancel_event)
@@ -253,13 +278,16 @@ class Brain:
             config = types.GenerateContentConfig(**settings)
             client = self._get_client()
             options = ([self.active_model] + [m for m in self._models() if m != self.active_model]
-                       if self.active_model in FREE_CANDIDATES else self._models())
+                       if self.active_model in self._models() else self._models())
             problems = []
             for model in options:
                 try:
                     response = self.generate(model, contents, config, cancel_event=cancel_event)
                     check_cancel(cancel_event)
-                    answer = (response.text or "Não recebi resposta em texto.").strip()
+                    answer = (getattr(response, "text", None) or "").strip()
+                    if not answer:
+                        problems.append((model, ValueError("Resposta sem texto")))
+                        continue
                     if search and provider == "google":
                         for candidate in getattr(response, "candidates", None) or []:
                             metadata = getattr(candidate, "grounding_metadata", None)
@@ -281,7 +309,7 @@ class Brain:
                     raise
                 except Exception as exc:
                     problems.append((model, exc))
-                    if model_restricted(exc) or transient_server_error(exc):
+                    if self.provider == 'gemini' and (model_restricted(exc) or transient_server_error(exc)):
                         continue  # 403/404 for one model -> try another documented free model.
                     return friendly_error(exc), []
             if problems:

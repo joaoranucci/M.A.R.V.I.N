@@ -91,6 +91,22 @@ class AppTests(unittest.TestCase):
         self.app.window.update()
         self.assertGreaterEqual(sum(isinstance(w, tk.Toplevel) for w in self.app.window.winfo_children()), 3)
 
+    def test_reload_reconnects_agent_and_closes_old_client(self):
+        old = self.app.brain
+        with patch('marvin.app.reload_gemini_config'), patch.object(old, 'close') as close:
+            self.app.reload_ai()
+        self.assertIsNot(self.app.brain, old)
+        self.assertIs(self.app.action_agent.brain, self.app.brain)
+        self.assertIs(self.app.runtime.agent.brain, self.app.brain)
+        close.assert_called_once()
+
+    def test_reload_is_blocked_during_task(self):
+        self.app.busy = True
+        with patch('marvin.app.reload_gemini_config') as reload:
+            self.app.reload_ai()
+        reload.assert_not_called()
+        self.app.busy = False
+
 
 if __name__=='__main__':
     unittest.main()

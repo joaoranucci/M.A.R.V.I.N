@@ -17,8 +17,8 @@
 | Autoprogramação multiarquivo | Implementado e testado | Sintaxe e transação; execução dos testes da proposta ainda manual |
 | Microfone/Vosk/Piper/Edge | Integrados | Imports validados; audibilidade/ativação física pendentes |
 | Interrupção de reprodução por botão | Implementado e teste do adaptador | Latência acústica real não medida |
-| Full duplex / interrupção acústica | Pendente | Microfone pausado durante TTS |
-| Pesquisa por assunto | Parcial | Abre Google; não produz resumo com fontes recuperadas automaticamente |
+| Full duplex / interrupção acústica | Implementado com testes simulados | Detecção durante TTS; sem cancelamento de eco; validação acústica física pendente |
+| Pesquisa por assunto | Implementado; validação remota pendente | Gemini grounding, Brave ou SearXNG; comandos explícitos de navegador continuam abrindo Google |
 | Ler URL pública explícita | Implementado e testado com transporte simulado | Sem sessão de conta, JS, PDF ou scraping universal |
 | UI-TARS local | Opcional | SDK/runtime/pesos existentes; tarefa visual real não validada |
 | OCR / percepção geral de documentos | Pendente | Sem novo pipeline OCR/documentos nesta entrega |
@@ -31,3 +31,7 @@
 P0 e fundamentos de P1 foram implementados; P2 recebeu memória, lembretes e controles de áudio. P3 recebeu leitura de URL explícita e limites adicionais na ponte visual. P4 recebeu um simulador de protocolo. P5 recebeu versões fixadas, diagnósticos e recuperação. Isso não representa conclusão integral de todas as metas P0–P5.
 
 Próximas entregas: validar voz real e Gemini na conta; retomar etapas seguras com plano persistente; confirmação por observação de janelas; pesquisa com fontes por assunto; rotinas habilitáveis; gateway autenticado e testes físicos do vestível.
+
+Atualização de 14/10/2026: geração curta real Gemini validada; 187 testes aprovados.
+Recarga de configuração e tratamento de respostas vazias adicionados. Detalhes e
+pendências atuais em [Desenvolvimento conjunto](joint-development.md).
