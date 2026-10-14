@@ -1,8 +1,24 @@
-# MARVIN v0.7.0
+# MARVIN v0.8.0 — Presença
 
-Assistente pessoal para Windows com voz opcional, conversa Gemini, projetos locais e registro persistente de tarefas. Esta versão implementa uma etapa funcional da evolução JARVIS; visão autônoma completa, conversa simultânea à própria voz e hardware vestível ainda não estão validados.
+Assistente pessoal para Windows com voz opcional, conversa Gemini, projetos locais e registro persistente de tarefas. Esta versão implementa uma etapa funcional da evolução JARVIS. A interrupção de fala usa detecção local; visão autônoma completa e hardware vestível continuam fora desta entrega.
 
-## Iniciar
+## Interface Presença
+
+Execute **INICIAR_PRESENCA.bat**. Os atalhos habituais também usam a nova interface quando compilada; `EXECUTAR.bat main.py --legacy` abre a interface clássica.
+
+Para instalar em outro computador: Python 3.12 x64, Node.js 22.12+ e Microsoft Edge WebView2 Runtime; execute **INSTALAR_INTERFACE.bat** após configurar o núcleo. React + Three.js renderizam o núcleo 3D, FastAPI conecta memória, projetos, tarefas e áudio por WebSocket. A janela nativa usa pywebview/WebView2. Tauri não foi compilado: esta máquina não tem Rust/Cargo nem as ferramentas C++ necessárias.
+
+- Voz como entrada principal. Diga “Marvin, abrir teclado” ou use **Ctrl+Espaço** para digitar; o campo se recolhe ao enviar um pedido.
+- **MARVIN Focus**: “vamos trabalhar no projeto dos óculos” abre um projeto existente. Arquivos, documentação, tarefas e contexto são reais. O visualizador de código é de leitura; alterações e verificações passam pelo núcleo e suas autorizações.
+- **Ctrl+Shift+M** ou “Marvin, modo compacto” recolhe para uma janela pequena sempre no topo. “Marvin, expandir” restaura a janela. Os atalhos precisam da janela em foco; a palavra de ativação funciona em segundo plano.
+- A esfera reage ao nível de entrada e à amplitude do áudio reproduzido; partículas indicam pensamento, fontes aparecem como conexões e autorizações mudam o núcleo para âmbar.
+- Agenda e memória são locais. Não há sincronização com calendário externo. Painéis vazios aguardam seus dados; não mostram compromissos ou progresso fictícios.
+- O servidor escuta apenas em 127.0.0.1, com sessão aleatória e validação de origem. Não publique essa porta na rede.
+- Consultas Google/Gemini e Brave dependem de chave e cota; SearXNG depende de uma instância configurada. Nenhum provedor é apresentado como ilimitado.
+
+Desenvolvimento: `cd desktop`, `npm ci`, `npm run build`; depois `python -m marvin.desktop`. `--browser` abre no navegador; `--no-audio` permite testar sem microfone. O build fica em `desktop/dist` e não é versionado.
+
+## Iniciar (núcleo e modo clássico)
 
 Abra **C MARVIN.bat** ou **INICIAR.bat**. A instalação existente não precisa ser refeita se abrir normalmente. O launcher usa a `.venv` válida e tenta o Python do sistema se ela estiver indisponível. Sem bibliotecas opcionais, texto, memória e comandos locais continuam acessíveis quando o Python/Tkinter está disponível.
 
@@ -19,7 +35,7 @@ Para uma instalação nova, use Python 3.12 x64 e **INSTALAR.bat**. Para instala
 - Testes Python e scripts npm conhecidos podem ser executados após aprovação do comando concreto, com ambiente filtrado, limite de saída, timeout e cancelamento.
 - Compatibilidade da resposta de função Gemini em SDKs diferentes sem repetir a ação.
 - Propostas de alteração do MARVIN com vários arquivos, diff, backup e recuperação.
-- Leitura de URLs públicas explícitas com URL/data de consulta. Pesquisa por assunto ainda abre o navegador; não equivale a leitura de fontes.
+- Leitura de URLs públicas explícitas com URL/data de consulta. Pesquisa por assunto usa Google/Gemini, Brave ou SearXNG, conforme configuração e disponibilidade.
 - Simulador local MARVIN Link com fragmentação, reconexão e proteção contra repetição de comandos.
 
 ## Experimente
@@ -39,7 +55,7 @@ Durante o trabalho, digite `status`, `espere`, `continue` ou `cancele`. **Esc/CA
 
 ## Voz e privacidade
 
-A palavra de ativação continua sendo **Marvin**. **ÁUDIO** permite selecionar dispositivos; nomes resistem melhor a renumeração que índices. **Ctrl+Espaço** inicia captura manual. Piper é a voz local principal; Edge TTS é uma alternativa online. Os modelos de voz podem precisar do primeiro download.
+A palavra de ativação continua sendo **Marvin**. **ÁUDIO** permite selecionar dispositivos; nomes resistem melhor a renumeração que índices. **Ctrl+Espaço** inicia captura manual no modo clássico e abre o teclado na interface Presença. Antônio (Edge TTS) é a voz padrão online; Piper Faber é a alternativa local. Os modelos de voz podem precisar do primeiro download.
 
 Com **Ativar com Marvin** e **Interromper ao falar** ligados, o microfone permanece ativo durante a reprodução. Um detector WebRTC com limiar de volume corta a fala após cerca de 180 ms de voz sustentada e preserva até 400 ms do início do comando. O novo comando não precisa começar por Marvin. Não há cancelamento acústico de eco: prefira fones; com caixas de som, ajuste o limiar no painel. Esc continua disponível. Continuidade opcional após a resposta: `MARVIN_CONTINUITY_SECONDS=0..30` (padrão 0). **Privacidade** desativa captura e tarefas visuais; lembretes continuam no painel.
 
@@ -69,3 +85,7 @@ A execução aprovada de testes **não é uma sandbox do sistema operacional**: 
 Demonstração com arquivos e testes reais: `EXECUTAR.bat -m marvin.demo`. Ela cria um projeto separado em `data/engineering_demo`, reproduz um erro e corrige. A sequência é programada e identificada como demonstração, sem LLM ou controle de desktop. Simulador de rádio **sem rádio real**: **SIMULAR_LINK.bat**.
 
 A versão anterior do código está em `data/upgrade_backups/pre_v070`. Para recuperação, feche o MARVIN e consulte o procedimento em `docs/diagnostics.md`. Não substitua seu banco atual por um backup antigo sem considerar as informações gravadas depois dele.
+
+### Teste visual da Presença
+
+Inicie `python -m marvin.desktop --no-open --no-audio --data-dir data/presence-test --workspace data/presence-test/projects`; em outro terminal, execute `cd desktop` e `node smoke.mjs` (requer Edge instalado). O teste cria somente o projeto `interface-validada` nessa pasta isolada e salva capturas em `data`. Os testes de API ficam em `tests/test_presence_v080.py`.

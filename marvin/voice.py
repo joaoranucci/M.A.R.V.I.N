@@ -41,6 +41,38 @@ _speech_lock = threading.Lock()
 _capture_lock = threading.Lock()
 _speech_context = threading.local()
 _active_speech = None
+_input_level = (0.0, 0.0)
+_output_levels = ()
+_output_started = 0.0
+
+
+def _input_meter(pcm):
+    global _input_level
+    if time.monotonic() - _input_level[0] < .05:
+        return
+    from array import array
+    samples = array('h', pcm)
+    level = (sum(x*x for x in samples)/max(1,len(samples)))**.5 / 5000
+    _input_level = (time.monotonic(), min(1.0, level))
+
+
+def _output_meter(samples, rate):
+    global _output_levels, _output_started
+    import numpy as np
+    samples = np.asarray(samples, dtype=np.float32)
+    if samples.ndim > 1:
+        samples = samples.mean(axis=1)
+    size = max(1,int(rate*.04))
+    _output_levels = tuple(min(1., float(np.sqrt(np.mean(samples[i:i+size]**2)))/8000)
+                           for i in range(0,len(samples),size))
+    _output_started = time.monotonic()
+
+
+def audio_snapshot():
+    now = time.monotonic()
+    index = max(0,int((now-_output_started)/.04))
+    return {'input':_input_level[1] if now-_input_level[0]<.3 else 0.,
+            'output':_output_levels[index] if _playing.is_set() and index<len(_output_levels) else 0.}
 
 
 class SpeechCancel(threading.Event):
@@ -327,6 +359,7 @@ def listen(status=lambda message: None, timeout_seconds=15, cancel_event=None) -
     chunks = queue.Queue(maxsize=32)
 
     def callback(indata, frames, time_info, status_flags):
+        _input_meter(bytes(indata))
         try:
             chunks.put_nowait(bytes(indata))
         except queue.Full:
@@ -366,6 +399,7 @@ def listen_wake(on_command, status, stop_event: threading.Event, pause_event: th
     frames = queue.Queue(maxsize=24)
 
     def callback(indata, frames_count, time_info, flags):
+        _input_meter(bytes(indata))
         try:
             frames.put_nowait(bytes(indata))
         except queue.Full:
@@ -516,6 +550,13 @@ def _piper_voice():
 def _play_wav(path: Path) -> None:
     if _cancelled():
         return
+    try:
+        import numpy as np
+        with wave.open(str(path), 'rb') as wav:
+            if wav.getsampwidth() == 2:
+                _output_meter(np.frombuffer(wav.readframes(wav.getnframes()),dtype=np.int16).reshape(-1,wav.getnchannels()), wav.getframerate())
+    except (ImportError, ValueError, wave.Error):
+        pass
     output = os.getenv("MARVIN_OUTPUT_DEVICE", "").strip()
     if output:
         import sounddevice as sd
@@ -597,6 +638,10 @@ def _edge_speak(text, voice, status) -> None:
         pygame.mixer.init()
         try:
             pygame.mixer.music.load(str(audio))
+            try:
+                _output_meter(pygame.sndarray.array(pygame.mixer.Sound(str(audio))), pygame.mixer.get_init()[0])
+            except Exception:
+                pass
             pygame.mixer.music.set_volume(1.0)
             pygame.mixer.music.play()
             _playing.set()
