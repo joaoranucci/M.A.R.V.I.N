@@ -75,8 +75,8 @@ def collect_health(root=ROOT, data_dir=None, include_hardware=False):
         "voz_piper": "instalado; saída física não testada" if installed("piper") else "piper ausente",
         "voz_online": "opcional instalada; rede não testada" if installed("edge_tts") else "edge-tts ausente",
         "ui_tars": "SDK instalado; servidor/controle não testados" if (root/"ui_tars_bridge/node_modules/@ui-tars/sdk").exists() else "SDK opcional ausente",
-        "pesquisa": "abre navegador; leitura de fontes via URL quando solicitada",
-        "interrupcao_voz": "botão/Esc; reconhecimento durante TTS não validado",
+        "pesquisa": "Google grounding / Brave / SearXNG configuráveis; acesso e cotas dependem do provedor",
+        "interrupcao_voz": "detecção WebRTC durante TTS, limiar ajustável; sem cancelamento de eco; botão/Esc disponíveis",
         "lembretes": "persistentes; requerem MARVIN aberto, PC acordado e relógio correto",
         "vestivel": "simulador; Bluetooth e hardware físico não validados",
     }

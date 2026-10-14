@@ -35,10 +35,36 @@ PIPER_SHA256 = "858555e3a064209c57088fe6bd70c4c3dc54d03eaa00c45d5ecaf43a33f95aa7
 OFFLINE_VOICE = "Piper-Faber-ptBR"
 MALE_EDGE_VOICES = {"pt-BR-AntonioNeural", "pt-BR-FabioNeural", "pt-BR-HumbertoNeural", "pt-BR-DonatoNeural", "pt-BR-JulioNeural"}
 VOICE_OPTIONS = tuple([OFFLINE_VOICE] + sorted(MALE_EDGE_VOICES))
+DEFAULT_VOICE = "pt-BR-AntonioNeural"
+_playing = threading.Event()
 _speech_lock = threading.Lock()
 _capture_lock = threading.Lock()
 _speech_context = threading.local()
 _active_speech = None
+
+
+class SpeechCancel(threading.Event):
+    def __init__(self, parent=None):
+        super().__init__()
+        self.parent = parent
+
+    def is_set(self):
+        return super().is_set() or bool(self.parent and self.parent.is_set())
+
+
+def is_speaking():
+    return _playing.is_set()
+
+
+def _playback(fn):
+    @wraps(fn)
+    def wrapped(*args, **kwargs):
+        _playing.set()
+        try:
+            return fn(*args, **kwargs)
+        finally:
+            _playing.clear()
+    return wrapped
 
 
 def cancel_speech():
@@ -329,7 +355,7 @@ def listen(status=lambda message: None, timeout_seconds=15, cancel_event=None) -
 
 
 @_exclusive_capture
-def listen_wake(on_command, status, stop_event: threading.Event, pause_event: threading.Event, on_wake=None):
+def listen_wake(on_command, status, stop_event: threading.Event, pause_event: threading.Event, on_wake=None, on_barge=None):
     """Ativa com MARVIN, depois espera comando por 12s.
 
     Dois reconhecedores: um livre (para "Marvin, abre ...") e um vocabulário
@@ -345,7 +371,22 @@ def listen_wake(on_command, status, stop_event: threading.Event, pause_event: th
         except queue.Full:
             pass
 
-    grammar = ["marvin", "mar vim", "mar vin", "ei marvin", "ola marvin", "ok marvin", "[unk]"]
+    grammar = ["marvin", "mar vim", "ei marvin", "ola marvin", "ok marvin", "[unk]"]
+    from .barge_in import SpeechOnset
+    from collections import deque
+    try:
+        threshold = float(os.getenv("MARVIN_BARGE_THRESHOLD", "650"))
+    except ValueError:
+        threshold = 650
+    try:
+        import webrtcvad
+        use_vad = True
+    except ImportError:
+        use_vad = False
+    onset = SpeechOnset(threshold, use_vad=use_vad)
+    preroll = deque()
+    preroll_bytes = 0
+    interrupted = False
     expecting_command_until = 0.0
     debug_wake = os.getenv("MARVIN_DEBUG_WAKE", "false").strip().lower() == "true"
     was_paused = False
@@ -361,6 +402,55 @@ def listen_wake(on_command, status, stop_event: threading.Event, pause_event: th
                 if expecting_command_until and time.monotonic() >= expecting_command_until:
                     expecting_command_until = 0.0
                     status("Aguardando 'Marvin'...")
+                continue
+            playing = is_speaking()
+            barge_enabled = os.getenv("MARVIN_BARGE_IN", "true").lower() == "true"
+            try:
+                onset.threshold = max(100, min(10000, float(os.getenv("MARVIN_BARGE_THRESHOLD", "650"))))
+            except ValueError:
+                pass
+            detected = onset.feed(block, sample_rate, playing=playing)
+            if pause_event.is_set() and not interrupted:
+                if playing and barge_enabled and on_barge:
+                    preroll.append(block)
+                    preroll_bytes += len(block)
+                    while preroll_bytes > sample_rate * 2 * .4 and len(preroll) > 1:
+                        preroll_bytes -= len(preroll.popleft())
+                    if detected:
+                        cancel_speech()
+                        on_barge()
+                        full = _new_recognizer(sample_rate)
+                        for previous in preroll:
+                            full.AcceptWaveform(previous)
+                        preroll.clear()
+                        preroll_bytes = 0
+                        interrupted = True
+                        expecting_command_until = time.monotonic() + 12
+                        was_paused = False
+                        status("Estou ouvindo você…")
+                        continue
+                    else:
+                        continue
+                else:
+                    preroll.clear()
+                    preroll_bytes = 0
+                    was_paused = True
+                    continue
+            if interrupted and time.monotonic() >= expecting_command_until:
+                interrupted = False
+                expecting_command_until = 0
+                full = _new_recognizer(sample_rate)
+                keyword = _new_recognizer(sample_rate, grammar)
+                status("Aguardando 'Marvin'...")
+                continue
+            if interrupted:
+                if full.AcceptWaveform(block):
+                    sentence = json.loads(full.Result()).get("text", "").strip()
+                    if sentence:
+                        activated, inline = wake_phrase(sentence)
+                        on_command(inline if activated and inline else sentence)
+                        interrupted = False
+                        expecting_command_until = 0
                 continue
             if pause_event.is_set():
                 was_paused = True
@@ -422,6 +512,7 @@ def _piper_voice():
     return PiperVoice.load(str(PIPER_MODEL))
 
 
+@_playback
 def _play_wav(path: Path) -> None:
     if _cancelled():
         return
@@ -479,7 +570,9 @@ def _piper_speak(text: str, status) -> None:
     with tempfile.TemporaryDirectory(prefix="marvin_audio_") as directory:
         filepath = Path(directory) / "speech.wav"
         with wave.open(str(filepath), "wb") as wav_file:
-            _piper_voice().synthesize_wav(text[:1200], wav_file)
+            from piper import SynthesisConfig
+            _piper_voice().synthesize_wav(text[:1200], wav_file,
+                syn_config=SynthesisConfig(length_scale=1.03, noise_scale=.45, noise_w_scale=.6))
         if filepath.stat().st_size <= 44:
             raise RuntimeError("O Piper retornou WAV vazio.")
         status("Reproduzindo voz masculina...")
@@ -493,7 +586,7 @@ def _edge_speak(text, voice, status) -> None:
         audio = Path(directory) / "voice.mp3"
 
         async def generate():
-            await edge_tts.Communicate(text[:1600], voice, rate="-6%").save(str(audio))
+            await edge_tts.Communicate(text[:1600], voice, rate="+0%", pitch="-2Hz").save(str(audio))
 
         status("Gerando voz neural online...")
         asyncio.run(asyncio.wait_for(generate(), timeout=25))
@@ -506,12 +599,14 @@ def _edge_speak(text, voice, status) -> None:
             pygame.mixer.music.load(str(audio))
             pygame.mixer.music.set_volume(1.0)
             pygame.mixer.music.play()
+            _playing.set()
             status("Reproduzindo áudio...")
             while pygame.mixer.music.get_busy() and not _cancelled():
                 time.sleep(0.04)
             pygame.mixer.music.stop()
             pygame.mixer.music.unload()
         finally:
+            _playing.clear()
             pygame.mixer.quit()
 
 
@@ -526,7 +621,7 @@ def speak(text: str, voice: str | None = None, status=lambda msg: None, cancel_e
         return "sem texto"
     errors = []
     with _speech_lock:
-        token = cancel_event if cancel_event is not None else threading.Event()
+        token = SpeechCancel(cancel_event)
         _speech_context.cancel = token
         _active_speech = token
         for engine in (["piper", "edge"] if selected == OFFLINE_VOICE else ["edge", "piper"]):

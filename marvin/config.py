@@ -9,7 +9,8 @@ ROOT = Path(__file__).resolve().parent.parent
 VERSION = "0.7.0"
 PREFERENCE_KEYS = {"MARVIN_MIC_DEVICE", "MARVIN_MIC_RATE", "MARVIN_OUTPUT_DEVICE",
                    "MARVIN_VOICE", "MARVIN_SPEAK", "MARVIN_WAKE", "MARVIN_VOLUME",
-                   "MARVIN_CONTINUITY_SECONDS"}
+                   "MARVIN_CONTINUITY_SECONDS", "MARVIN_BARGE_IN", "MARVIN_BARGE_THRESHOLD",
+                   "MARVIN_SEARCH_PROVIDER", "MARVIN_REASONING"}
 
 
 def load_config(root: Path = ROOT) -> Path:

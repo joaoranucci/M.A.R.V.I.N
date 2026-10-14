@@ -177,6 +177,12 @@ class Runtime:
                     "status": "waiting_user", "message": "A tarefa anterior precisa de revisão antes de novas ações: " + chosen["objective"] + "\nEtapas preservadas:\n" + json.dumps(details, ensure_ascii=False, default=str)[:5000] + "\nDescreva a próxima etapa desejada; os efeitos anteriores não serão repetidos automaticamente."}
         action = detect(question)
         if action.kind == "local":
+            if action.value.startswith("google-browser:") and not re.match(r"^(?:marvin[, ]+)?(?:abra|abre|abrir)\b", n):
+                def web_search():
+                    answer, sources = self.agent.brain.ask(action.value.partition(":")[2], search=True, cancel_event=self.control)
+                    return {"ok": self.agent.brain.last_ask_ok, "message": answer,
+                            "sources": sources, "status": "completed" if self.agent.brain.last_ask_ok else "failed"}
+                return "search_web", {"query": action.value.partition(":")[2]}, web_search
             def local_command():
                 if action.value in {"desktop:close", "desktop:lock"}:
                     label = "Fechar a janela ativa? Alterações não salvas podem ser perdidas." if action.value.endswith("close") else "Bloquear o computador?"

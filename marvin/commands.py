@@ -102,15 +102,6 @@ def detect(text: str) -> Command:
     n = re.sub(r"^(?:(?:c|ce|se|si|ei|hey|ola|ok) )?marvin(?:[,: ]+|$)", "", n).strip()
     n = re.sub(r"^(?:por favor[, ]*|pode (?:por favor )?|voce pode |quero que voce )", "", n).strip()
 
-    # Suporte a comandos compostos (separados por ' e ' ou ';')
-    if " e " in n or ";" in n:
-        parts = re.split(r"\s+e\s+|\s*;\s*", n)
-        if len(parts) > 1:
-            # Executa o primeiro comando detectado na sequência composta
-            sub_cmd = detect_single(parts[0].strip(), original)
-            if sub_cmd.kind == "local":
-                return sub_cmd
-
     return detect_single(n, original)
 
 

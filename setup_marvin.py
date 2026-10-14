@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parent
 
 def usable(executable):
     try:
-        return subprocess.run([str(executable), "-c", "import sys, tkinter; assert sys.version_info >= (3, 11)"],
+        return subprocess.run([str(executable), "-c", "import sys, tkinter, pip; assert (3, 11) <= sys.version_info[:2] < (3, 15)"],
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=15,
             creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0)).returncode == 0
     except (OSError, subprocess.TimeoutExpired):
@@ -25,7 +25,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--core-only", action="store_true", help="Instala somente conversa/texto; áudio é opcional.")
     args = parser.parse_args()
-    if sys.version_info < (3, 11):
+    if not (3, 11) <= sys.version_info[:2] < (3, 15):
         raise SystemExit("Instale Python 3.12 x64 (com Tkinter) para o conjunto de recursos validado.")
     target = ROOT / ".venv"
     if target.is_symlink() or target.resolve().parent != ROOT:

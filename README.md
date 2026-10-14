@@ -41,7 +41,11 @@ Durante o trabalho, digite `status`, `espere`, `continue` ou `cancele`. **Esc/CA
 
 A palavra de ativação continua sendo **Marvin**. **ÁUDIO** permite selecionar dispositivos; nomes resistem melhor a renumeração que índices. **Ctrl+Espaço** inicia captura manual. Piper é a voz local principal; Edge TTS é uma alternativa online. Os modelos de voz podem precisar do primeiro download.
 
-O reconhecimento fica pausado durante TTS; esta versão não promete full duplex nem interrupção por voz enquanto fala. Use Esc. Continuidade opcional após a resposta: `MARVIN_CONTINUITY_SECONDS=0..30` (padrão 0). **Privacidade** desativa captura e tarefas visuais; lembretes continuam no painel.
+Com **Ativar com Marvin** e **Interromper ao falar** ligados, o microfone permanece ativo durante a reprodução. Um detector WebRTC com limiar de volume corta a fala após cerca de 180 ms de voz sustentada e preserva até 400 ms do início do comando. O novo comando não precisa começar por Marvin. Não há cancelamento acústico de eco: prefira fones; com caixas de som, ajuste o limiar no painel. Esc continua disponível. Continuidade opcional após a resposta: `MARVIN_CONTINUITY_SECONDS=0..30` (padrão 0). **Privacidade** desativa captura e tarefas visuais; lembretes continuam no painel.
+
+A voz principal agora é Antônio Neural (online), com Piper Faber local como alternativa. O painel inclui uma esfera 3D projetada e animada e estados de atividade. **Raciocínio** seleciona os níveis minimal, medium ou high do Gemini. Conversas simples usam um caminho sem declarações de ferramentas; pedidos de ações mantêm autorização e registro de etapas.
+
+`Pesquise ...` consulta fontes dentro do MARVIN. `Abra o Google e pesquise ...` continua abrindo o navegador. O provedor Google usa grounding Gemini e depende da cota do projeto. Brave exige `BRAVE_SEARCH_API_KEY`; SearXNG exige `SEARXNG_URL` com JSON habilitado. Nenhum provedor é prometido como gratuito ou ilimitado. As fontes aparecem como links clicáveis; ausência de fontes não é apresentada como pesquisa confirmada.
 
 ## Dados e limites
 

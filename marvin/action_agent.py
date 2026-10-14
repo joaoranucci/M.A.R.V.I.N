@@ -290,6 +290,15 @@ class ActionAgent:
 
     def _assist(self, question, emit, task_id):
         check_cancel(self._cancel_event)
+        from .commands import looks_current
+        search = looks_current(question) or bool(re.match(r"^(?:marvin[, ]+)?(?:pesquise|pesquisa|procure|busque|consulte)\b", question, re.I))
+        if (not action_prompt(question) and not re.search(r"https?://", question)
+                and not re.search(r"\b(projeto|comando|arquivo|pasta|aplicativo|janela|crie|criar|execute|executar|abra|abrir)\b", question, re.I)
+                and self.brain.api_key and self.brain.api_key != "COLE_SUA_CHAVE_AQUI"):
+            emit("Consultando fontes…" if search else "Preparando resposta…")
+            answer, sources = self.brain.ask(question, search=search, cancel_event=self._cancel_event)
+            self.last_outcome = "completed" if self.brain.last_ask_ok else "failed"
+            return answer
         if not self.brain.api_key or self.brain.api_key == "COLE_SUA_CHAVE_AQUI":
             local = self._offline(question, task_id, emit)
             if local:
@@ -327,9 +336,10 @@ class ActionAgent:
             check_cancel(self._cancel_event)
             if time.monotonic() - start > 300:
                 return self._finish("failed", question, "Limite de duração atingido. Etapas concluídas preservadas; tarefa ainda não finalizada.")
-            config = types.GenerateContentConfig(system_instruction=instruction, max_output_tokens=6000,
+            config = types.GenerateContentConfig(system_instruction=instruction, max_output_tokens=6000 if project_intent(question) else 1800,
                 tools=[tool], automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
-                tool_config=types.ToolConfig(function_calling_config=types.FunctionCallingConfig(mode="AUTO")))
+                tool_config=types.ToolConfig(function_calling_config=types.FunctionCallingConfig(mode="AUTO")),
+                **self.brain.thinking_settings(types))
             response, errors = None, []
             options = [selected] if had_effects and selected else models
             for idx, model in enumerate(options):

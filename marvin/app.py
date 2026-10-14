@@ -5,6 +5,8 @@ import os
 from pathlib import Path
 import queue
 import threading
+import re
+import webbrowser
 import tkinter as tk
 from tkinter import messagebox, scrolledtext, ttk
 
@@ -19,7 +21,8 @@ from .instance import InstanceLock
 from .telemetry import EventLog
 from .runtime import Runtime, TaskControl, request_text
 from .visual_agent import VisualAgent, visual_intent, visual_risk
-from .voice import VOICE_OPTIONS, OFFLINE_VOICE, listen, listen_wake, speak, cancel_speech
+from .voice import VOICE_OPTIONS, OFFLINE_VOICE, DEFAULT_VOICE, listen, listen_wake, speak, cancel_speech, is_speaking
+from .orb import Orb
 
 BG, PANEL, ACCENT, FG, MUTED = "#0a101b", "#111c2c", "#57c7ef", "#eaf5fb", "#a1b7cb"
 
@@ -48,22 +51,57 @@ class MarvinApp:
                                confirm_action=self._confirm_action)
         self.window = tk.Tk()
         self.window.title("MARVIN — " + VERSION)
-        self.window.geometry("1020x780")
-        self.window.minsize(820, 610)
+        self.window.geometry("1200x850")
+        self.window.minsize(1080, 760)
         self.window.configure(bg=BG)
         self.tts_enabled = tk.BooleanVar(value=os.getenv("MARVIN_SPEAK", "true").lower() == "true")
         self.wake_enabled = tk.BooleanVar(value=os.getenv("MARVIN_WAKE", "true").lower() == "true")
         self.privacy = tk.BooleanVar(value=False)
-        selected = os.getenv("MARVIN_VOICE", OFFLINE_VOICE)
+        selected = os.getenv("MARVIN_VOICE", DEFAULT_VOICE)
         self.voice_selected = tk.StringVar(value=selected if selected in VOICE_OPTIONS else OFFLINE_VOICE)
         header = tk.Frame(self.window, bg=BG)
         header.pack(fill="x", padx=20, pady=(15, 8))
         tk.Label(header, text="◈  M A R V I N", bg=BG, fg=ACCENT, font=("Segoe UI Semibold", 23)).pack(side="left")
         self.mode = tk.Label(header, text="LOCAL · API ainda não validada", bg=BG, fg=MUTED, font=("Segoe UI", 10))
         self.mode.pack(side="right")
-        self.chat = scrolledtext.ScrolledText(self.window, bg=PANEL, fg=FG, wrap="word", state="disabled",
+        body = tk.Frame(self.window, bg=BG)
+        body.pack(fill="both", expand=True, padx=20, pady=8)
+        sidebar = tk.Frame(body, bg="#0b1524", width=260)
+        sidebar.pack(side="left", fill="y", padx=(0, 14))
+        sidebar.pack_propagate(False)
+        tk.Label(sidebar, text="NÚCLEO MARVIN", fg=ACCENT, bg="#0b1524", font=("Segoe UI Semibold", 13)).pack(pady=(18, 0))
+        self.orb = Orb(sidebar, self.activity)
+        self.orb.pack(fill="x")
+        self.activity_label = tk.Label(sidebar, text="Pronto para conversar", fg=FG, bg="#0b1524", wraplength=220, font=("Segoe UI", 11))
+        self.activity_label.pack(padx=14, pady=8)
+        tk.Label(sidebar, text="CONVERSA · MEMÓRIA · PESQUISA", fg=MUTED, bg="#0b1524", font=("Segoe UI", 8)).pack(pady=12)
+        self.barge_enabled = tk.BooleanVar(value=os.getenv("MARVIN_BARGE_IN", "true").lower()=="true")
+        tk.Checkbutton(sidebar, text="Interromper ao falar", variable=self.barge_enabled, command=self.persist_controls,
+                       bg="#0b1524", fg=FG, selectcolor=PANEL).pack(anchor="w", padx=14)
+        tk.Label(sidebar, text="Sensibilidade do microfone", fg=MUTED, bg="#0b1524").pack(anchor="w", padx=14, pady=(12,0))
+        try:
+            threshold = float(os.getenv("MARVIN_BARGE_THRESHOLD", "650"))
+        except ValueError:
+            threshold = 650
+        self.barge_threshold = tk.DoubleVar(value=threshold)
+        tk.Scale(sidebar, from_=150, to=4000, resolution=50, orient="horizontal", variable=self.barge_threshold,
+                 command=lambda _: self.persist_barge_threshold(), bg="#0b1524", fg=MUTED,
+                 highlightthickness=0, troughcolor=PANEL, length=215).pack(padx=14)
+        tk.Label(sidebar, text="Valor menor detecta fala mais baixa.\nCom caixas de som, ajuste para evitar eco.",
+                 wraplength=220, fg=MUTED, bg="#0b1524", font=("Segoe UI",9)).pack(padx=14,pady=8)
+        self.reasoning = tk.StringVar(value=os.getenv("MARVIN_REASONING", "equilibrado"))
+        tk.Label(sidebar, text="Raciocínio", fg=MUTED, bg="#0b1524").pack(anchor="w", padx=14, pady=(12,4))
+        reasoning_box = ttk.Combobox(sidebar, textvariable=self.reasoning, values=("rapido", "equilibrado", "profundo"), state="readonly", width=22)
+        reasoning_box.pack(padx=14)
+        reasoning_box.bind("<<ComboboxSelected>>", lambda _: self.persist_controls())
+        self.search_provider = tk.StringVar(value=os.getenv("MARVIN_SEARCH_PROVIDER", "google"))
+        tk.Label(sidebar, text="Pesquisa com fontes", fg=MUTED, bg="#0b1524").pack(anchor="w", padx=14, pady=(12,4))
+        provider_box = ttk.Combobox(sidebar, textvariable=self.search_provider, values=("google", "brave", "searxng"), state="readonly", width=22)
+        provider_box.pack(padx=14)
+        provider_box.bind("<<ComboboxSelected>>", lambda _: self.persist_controls())
+        self.chat = scrolledtext.ScrolledText(body, bg=PANEL, fg=FG, wrap="word", state="disabled",
             font=("Segoe UI", 11), relief="flat", padx=14, pady=12)
-        self.chat.pack(fill="both", expand=True, padx=20, pady=8)
+        self.chat.pack(side="left", fill="both", expand=True)
         for tag, color in (("you", ACCENT), ("marvin", FG), ("status", MUTED)):
             self.chat.tag_config(tag, foreground=color, spacing1=8)
         input_row = tk.Frame(self.window, bg=BG)
@@ -111,6 +149,25 @@ class MarvinApp:
         self.window.after(80, self.poll_ui)
         self.window.after(500, self.update_wake)
         self.window.after(1000, self.poll_reminders)
+        self.window.after(150, self.update_activity)
+
+    def activity(self):
+        if self.privacy.get():
+            return "Privacidade"
+        if is_speaking():
+            return "Falando"
+        if getattr(self, "interrupted_listening", False):
+            return "Ouvindo"
+        return "Pensando" if self.busy else "Pronto"
+
+    def update_activity(self):
+        if self.closing:
+            return
+        self.activity_label.configure(text=self.activity())
+        self.window.after(150, self.update_activity)
+
+    def persist_barge_threshold(self):
+        save_preferences(self.data_dir, {"MARVIN_BARGE_THRESHOLD": self.barge_threshold.get()})
 
     def button(self, parent, label, fn, color=ACCENT):
         b = tk.Button(parent, text=label, command=fn, bg=PANEL, fg=color, relief="flat", padx=8, pady=6, font=("Segoe UI", 9))
@@ -149,7 +206,17 @@ class MarvinApp:
 
     def append(self, tag, value):
         self.chat.configure(state="normal")
-        self.chat.insert("end", {"you": "VOCÊ", "marvin": "MARVIN", "status": "SISTEMA"}.get(tag, tag) + "  •  " + str(value) + "\n\n", tag)
+        self.chat.insert("end", {"you": "VOCÊ", "marvin": "MARVIN", "status": "SISTEMA"}.get(tag, tag) + "  •  ", tag)
+        value = str(value)
+        offset = 0
+        for match in re.finditer(r"\[([^\]]+)\]\((https?://[^\s)]+)\)", value):
+            self.chat.insert("end", value[offset:match.start()], tag)
+            link_tag = "source_" + str(len(self.chat.tag_names()))
+            self.chat.insert("end", match.group(1), (tag, link_tag))
+            self.chat.tag_config(link_tag, foreground=ACCENT, underline=True)
+            self.chat.tag_bind(link_tag, "<Button-1>", lambda event, url=match.group(2): webbrowser.open(url))
+            offset = match.end()
+        self.chat.insert("end", value[offset:] + "\n\n", tag)
         # Bound the visible transcript; history remains in SQLite.
         if int(self.chat.index("end-1c").split(".")[0]) > 2000:
             self.chat.delete("1.0", "400.0")
@@ -179,6 +246,8 @@ class MarvinApp:
                     self.status.configure(text=data["type"] + " · " + str(data.get("task_id") or "")[:8])
             elif kind == "status":
                 self.status.configure(text=str(data)[:220])
+                if str(data).startswith("Aguardando"):
+                    self.interrupted_listening = False
             elif kind == "reply":
                 self.append("marvin", data)
                 if self.brain.active_model:
@@ -196,12 +265,18 @@ class MarvinApp:
                     self.finish()
             elif kind == "wake_command":
                 stop, text = data
-                if stop is self.wake_stop and not stop.is_set() and not self.busy and not self.privacy.get() and self.wake_enabled.get():
+                if stop is self.wake_stop and not stop.is_set() and not self.privacy.get() and self.wake_enabled.get():
+                    self.interrupted_listening = False
                     self.process(text)
+            elif kind == "barge":
+                if data is self.wake_stop and not data.is_set() and not self.privacy.get():
+                    self.interrupted_listening = True
+                    self.status.configure(text="Fala interrompida · estou ouvindo você")
             elif kind == "wake_error":
                 self.wake_enabled.set(False)
                 self.append("status", "Ativação indisponível: " + str(data)[:350] + " Use texto ou configure ÁUDIO.")
             elif kind == "wake_active":
+                self.interrupted_listening = True
                 self.status.configure(text="Marvin ativado. Ouvindo seu comando…")
                 self.window.bell()
             elif kind == "finish":
@@ -228,7 +303,9 @@ class MarvinApp:
 
     def persist_controls(self):
         save_preferences(self.data_dir, {"MARVIN_SPEAK": str(self.tts_enabled.get()).lower(),
-            "MARVIN_WAKE": str(self.wake_enabled.get()).lower(), "MARVIN_VOICE": self.voice_selected.get()})
+            "MARVIN_WAKE": str(self.wake_enabled.get()).lower(), "MARVIN_VOICE": self.voice_selected.get(),
+            "MARVIN_BARGE_IN": str(self.barge_enabled.get()).lower(),
+            "MARVIN_REASONING": self.reasoning.get(), "MARVIN_SEARCH_PROVIDER": self.search_provider.get()})
 
     def update_wake(self, persist=True):
         if persist:
@@ -243,7 +320,7 @@ class MarvinApp:
         def worker():
             try:
                 listen_wake(lambda q: self.post("wake_command", (stop, q)), lambda s: self.post("status", s), stop, pause,
-                            on_wake=lambda: self.post("wake_active"))
+                            on_wake=lambda: self.post("wake_active"), on_barge=lambda: self.post("barge", stop))
             except Exception as exc:
                 if not stop.is_set():
                     self.post("wake_error", str(exc))
@@ -267,6 +344,7 @@ class MarvinApp:
                 self.append("status", str(exc)[:350])
 
     def process(self, question, task_id=None):
+        self.interrupted_listening = False
         n = normalize(request_text(question))
         if n in {"pare", "para", "cancelar", "cancele", "pare de falar", "parar"}:
             self.cancel_all()
@@ -307,6 +385,7 @@ class MarvinApp:
         self.worker(worker, name="MARVIN-task")
 
     def cancel_all(self):
+        self.interrupted_listening = False
         self.token.set()
         self.runtime.cancel()
         cancel_speech()
@@ -328,6 +407,7 @@ class MarvinApp:
         self.token = TaskControl()
         token = self.token
         self.set_busy()
+        self.interrupted_listening = True
         self.wake_stop.set()
         def worker():
             try:
