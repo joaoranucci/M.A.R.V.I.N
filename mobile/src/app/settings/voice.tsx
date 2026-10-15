@@ -95,7 +95,7 @@ export default function VoiceSettings() {
         <Row
           key={v.id}
           title={v.name}
-          subtitle={`${v.language}${v.network ? ' · requer internet' : ' · no aparelho'}${v.likelyMale ? ' · provavelmente masculina' : ''}`}
+          subtitle={`${v.language}${v.network ? ' · requer internet' : Platform.OS === 'ios' ? ' · voz do sistema' : ' · no aparelho'}${v.likelyMale ? ' · provavelmente masculina' : ''}`}
           icon={s.deviceVoiceId === v.id ? 'radio-button-on' : 'radio-button-off'}
           onPress={() => void s.update({ deviceVoiceId: v.id })}
           right={<Button label="Testar" compact loading={testing === `device:${v.id}`} onPress={() => void test('device', v.id)} />}
@@ -123,7 +123,7 @@ export default function VoiceSettings() {
       <Row
         title="Processar a fala no aparelho"
         subtitle={recognition.onDevice ? 'Mais privado; exige português offline. Desligado, o sistema pode enviar o áudio ao serviço de reconhecimento da Apple ou do Google.' : 'Este aparelho não oferece reconhecimento offline para o app.'}
-        right={<Switch value={s.onDeviceRecognition && recognition.onDevice} disabled={!recognition.onDevice} onValueChange={(v) => void s.update({ onDeviceRecognition: v })} trackColor={{ true: colors.cyan, false: colors.surfaceSolid }} thumbColor={colors.text} />}
+        right={<Switch value={s.onDeviceRecognition} disabled={!recognition.onDevice && !s.onDeviceRecognition} onValueChange={(v) => void s.update({ onDeviceRecognition: v })} trackColor={{ true: colors.cyan, false: colors.surfaceSolid }} thumbColor={colors.text} />}
       />
       {Platform.OS === 'android' && <Text style={type.caption}>Pausa para encerrar a fala automaticamente</Text>}
       {Platform.OS === 'android' && <Segmented value={String(s.silenceMs)} onChange={(v) => void s.update({ silenceMs: Number(v) })} options={SILENCE.map((ms) => ({ value: String(ms), label: `${(ms / 1000).toFixed(1).replace('.', ',')} s` }))} />}

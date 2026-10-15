@@ -104,6 +104,7 @@
         }
       ],
       "./plugins/withShareIntent.js",
+      "expo-asset",
       "./plugins/withMarvinIOS.js"
     ],
     "experiments": {

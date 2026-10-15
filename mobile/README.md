@@ -1,8 +1,10 @@
-# MARVIN Mobile (Android · v0.1)
+# MARVIN Mobile (Android e iOS · v0.1)
 
 App de voz do MARVIN: núcleo animado, conversa falada em pt-BR, memórias com origem, biblioteca de documentos, tarefas e ações verificáveis no computador. Expo SDK 57 · React Native 0.86 · TypeScript · Nova Arquitetura.
 
 Decisões: [docs/mobile/DECISOES.md](../docs/mobile/DECISOES.md) · Contrato do gateway: [docs/mobile/API_GATEWAY.md](../docs/mobile/API_GATEWAY.md) · Wearables: [docs/mobile/WEARABLES.md](../docs/mobile/WEARABLES.md) · Validação: [docs/mobile/VALIDACAO.md](../docs/mobile/VALIDACAO.md)
+
+Instalação no iPhone, EAS pelo Windows e TestFlight: [guia iOS](../docs/mobile/IOS.md). Auditoria: [dependências](../docs/mobile/IOS_DEPENDENCIAS.md). Evidências e limites: [validação iOS](../docs/mobile/IOS_VALIDACAO.md).
 
 ## Como as peças se conectam
 
@@ -16,7 +18,7 @@ Celular (este app) ──HTTPS fixado (TLS)──► Gateway Mobile no PC (marvi
 ## Pré-requisitos no Windows
 
 - Node.js 22.13+ (testado com 24.15), JDK 17 (Microsoft OpenJDK 17 ou o JBR do Android Studio), Android SDK com plataforma 36 e build-tools.
-- No PC do MARVIN: `.venv` do projeto com `python-multipart` e `segno` (`pip install -r requirements-desktop.txt`).
+- No PC do MARVIN: `.venv` do projeto com `python-multipart` e `segno` (`pip install -r requirements-desktop.txt -r requirements-mobile-gateway.txt`).
 
 ## 1. Ligar o gateway no PC
 
@@ -51,8 +53,10 @@ npx expo run:android
 Verificações:
 
 ```bash
-npx tsc --noEmit
+npm run lint
+npm run typecheck
 npm test
+npx expo-doctor
 ```
 
 ## 4. APK de prévia (abre sem servidor de desenvolvimento)
@@ -68,8 +72,9 @@ Se o Gradle falhar com `Unable to establish loopback connection`, o script já a
 ## Organização
 
 ```
-modules/marvin-native/      Kotlin: TLS fixado no OkHttp, foco de áudio/chamadas/fones, arquivos compartilhados
+modules/marvin-native/      Kotlin/Swift: transporte HTTPS fixado, foco/sessão de áudio, interrupções e rotas
 plugins/withShareIntent.js  menu Compartilhar do Android
+plugins/withMarvinIOS.js    permissões iOS/rede local geradas por CNG
 src/app/                    telas (expo-router): MARVIN, Biblioteca, Atividades, Dispositivos, Configurações
 src/core/                   SQLite, credenciais seguras, conectividade, eventos (long-poll), sincronização, logs sem segredos
 src/features/assistant/     controlador de voz/estados, intenções pt-BR (puras, testadas), eco

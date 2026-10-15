@@ -60,7 +60,7 @@ export default function Diagnostics() {
       { k: 'Notificações', v: String(notif) },
       { k: 'Reconhecimento de fala', v: `${recognition.available ? 'disponível' : 'indisponível'} · offline: ${recognition.onDevice ? 'sim' : 'não'}` },
       { k: 'Vozes pt no aparelho', v: `${voices.length} (${voices.filter((v) => v.likelyMale).length} provavelmente masculinas)` },
-      { k: 'Saída de áudio', v: `${audio.route} · ${audio.inCall ? 'em chamada' : 'livre'}` },
+      { k: 'Saída de áudio', v: `${audio.route} · ${audio.inCall ? (Platform.OS === 'ios' ? 'interrompido pelo sistema' : 'em chamada') : 'livre'}` },
     ]);
     setLogs(await recentLogs(120));
   }, [connectivity, connection, sync.pending, sync.lastError]);

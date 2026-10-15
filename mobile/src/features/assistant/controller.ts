@@ -167,7 +167,7 @@ async function beginListening(): Promise<void> {
   }
   if (AppState.currentState !== 'active') return;
   if (!acquireFocus('listen')) {
-    set({ notice: { tone: 'warn', text: 'Há uma chamada em andamento. Tente quando ela terminar.' } });
+    set({ notice: { tone: 'warn', text: 'O áudio está ocupado ou interrompido pelo sistema. Tente novamente depois.' } });
     return;
   }
   haptic('tap');

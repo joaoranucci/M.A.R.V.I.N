@@ -64,7 +64,8 @@ final class MarvinAudioSession {
   func abandon() { queue.sync { deactivate() } }
 
   private func deactivate() {
-    if active { try? session.setActive(false, options: .notifyOthersOnDeactivation) }
+    // Retry after JS stopped the player: an earlier deactivation can fail while I/O is busy.
+    try? session.setActive(false, options: .notifyOthersOnDeactivation)
     active = false
   }
 
