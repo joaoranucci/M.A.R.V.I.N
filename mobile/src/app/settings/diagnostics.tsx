@@ -119,5 +119,5 @@ export default function Diagnostics() {
 const styles = StyleSheet.create({
   content: { padding: space.xl, gap: space.md, paddingBottom: space.xxxl },
   line: { flexDirection: 'row', gap: space.sm },
-  log: { fontFamily: 'monospace', fontSize: 11, color: colors.textSecondary },
+  log: { fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', fontSize: 11, color: colors.textSecondary },
 });

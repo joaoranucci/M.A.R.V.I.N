@@ -132,7 +132,16 @@ export function interruptSpeech() {
 }
 
 // ---- listening --------------------------------------------------------------------------
+let requestingListen = false;
+
 export async function startListening(): Promise<void> {
+  if (requestingListen) return;
+  requestingListen = true;
+  try { await beginListening(); }
+  finally { requestingListen = false; }
+}
+
+async function beginListening(): Promise<void> {
   const phase = get().phase;
   if (phase === 'listening' || phase === 'processing' || phase === 'executing') return;
   stopWake();
@@ -156,6 +165,7 @@ export async function startListening(): Promise<void> {
     });
     return;
   }
+  if (AppState.currentState !== 'active') return;
   if (!acquireFocus('listen')) {
     set({ notice: { tone: 'warn', text: 'Há uma chamada em andamento. Tente quando ela terminar.' } });
     return;

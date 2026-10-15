@@ -30,7 +30,7 @@ final class MarvinTransport {
   func probe(host: String, port: Int, completion: @escaping MarvinHTTPCompletion) {
     var address = URLComponents()
     address.scheme = "https"
-    address.host = host
+    address.host = host.hasPrefix("[") && host.hasSuffix("]") ? String(host.dropFirst().dropLast()) : host
     address.port = port
     address.path = "/v1/health"
     guard (1...65535).contains(port), let url = address.url else {

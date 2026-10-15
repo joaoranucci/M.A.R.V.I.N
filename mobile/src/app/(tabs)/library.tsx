@@ -92,7 +92,7 @@ function Documents() {
             ? `Formatos aceitos pelo PC: ${acceptedFormats().join(' ')} · até ${Math.round(caps.documents.max_bytes / 1048576)} MB.${caps.documents.ocr ? '' : ' PDF digitalizado (imagem) não funciona: o PC não tem OCR.'}`
             : 'Conecte ao PC uma vez para carregar os formatos aceitos.'}
         </Text>
-        <Text style={type.caption}>{Platform.OS === 'ios' ? 'Use “Importar documento” para escolher um arquivo no app Arquivos ou no iCloud Drive.' : 'Você também pode compartilhar um arquivo com o MARVIN pelo menu do Android.'}</Text>
+        <Text style={type.caption}>{Platform.OS === 'ios' ? 'Use “Escolher arquivo” para escolher um arquivo no app Arquivos ou no iCloud Drive.' : 'Você também pode compartilhar um arquivo com o MARVIN pelo menu do Android.'}</Text>
         <View style={styles.chips}>
           {['geral', 'estudos', 'trabalho', 'projetos', 'pessoal'].map((c) => (
             <Pressable key={c} onPress={() => setCategory(c)} accessibilityRole="radio" accessibilityState={{ checked: category === c }}>

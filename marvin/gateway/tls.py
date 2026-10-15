@@ -35,7 +35,7 @@ def display_fingerprint(pin: str) -> str:
     return "-".join(digest[i:i + 4] for i in range(0, len(digest), 4))
 
 
-def ensure_identity(directory: Path, server_name: str) -> tuple[Path, Path, str]:
+def ensure_identity(directory: Path, server_name: str, advertise_host: str = "") -> tuple[Path, Path, str]:
     """Keep the device's pinned key; renew only the managed server certificate.
 
     Apple TLS checks the endpoint SAN and serverAuth EKU. Older MARVIN certificates
@@ -64,6 +64,13 @@ def ensure_identity(directory: Path, server_name: str) -> tuple[Path, Path, str]
             names.append(x509.IPAddress(ipaddress.ip_address(address)))
         except ValueError:
             pass
+
+    if advertise_host:
+        advertised = advertise_host.strip().removeprefix("[").removesuffix("]")
+        try:
+            names.append(x509.IPAddress(ipaddress.ip_address(advertised)))
+        except ValueError:
+            names.append(x509.DNSName(advertised.encode("idna").decode("ascii")))
 
     old_names: list[x509.GeneralName] = []
     server_auth = False

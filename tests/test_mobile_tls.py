@@ -77,3 +77,11 @@ class MobileTLSTests(unittest.TestCase):
             ensure_identity(self.root, "teste")
         self.assertEqual(cert.read_bytes(), original)
         self.assertFalse(key.exists())
+
+    def test_explicit_vpn_or_dns_address_is_covered_without_changing_pin(self):
+        cert, key, pin = ensure_identity(self.root, "teste")
+        for address in ["100.65.1.99", "pc-vpn.example"]:
+            self.assertEqual(ensure_identity(self.root, "teste", address)[2], pin)
+        names = x509.load_pem_x509_certificate(cert.read_bytes()).extensions.get_extension_for_class(x509.SubjectAlternativeName).value
+        self.assertIn("pc-vpn.example", names.get_values_for_type(x509.DNSName))
+        self.assertIn("100.65.1.99", [str(ip) for ip in names.get_values_for_type(x509.IPAddress)])

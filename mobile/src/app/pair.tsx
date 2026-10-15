@@ -1,7 +1,7 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
-import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Banner, Button, Card, Field, Segmented } from '../components/ui';
 import { MarvinNative } from '../../modules/marvin-native';
 import { parsePairingUrl, validHost, type PairingPayload } from '../features/assistant/nlp/pairing';
@@ -173,5 +173,5 @@ const styles = StyleSheet.create({
   cameraWrap: { height: 320, borderRadius: radius.lg, overflow: 'hidden', backgroundColor: '#000', alignItems: 'center', justifyContent: 'center' },
   frame: { width: 220, height: 220, borderWidth: 2, borderColor: colors.cyan, borderRadius: radius.lg },
   cameraNote: { position: 'absolute', bottom: 12, backgroundColor: 'rgba(0,0,0,0.7)', padding: 8, borderRadius: 8 },
-  fingerprint: { fontFamily: 'monospace', fontSize: 16, color: colors.text },
+  fingerprint: { fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', fontSize: 16, color: colors.text },
 });

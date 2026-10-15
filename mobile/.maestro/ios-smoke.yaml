@@ -1,0 +1,51 @@
+appId: dev.marvin.mobile
+---
+- launchApp:
+    permissions:
+      all: deny
+- assertVisible: "MARVIN"
+- assertNotVisible: "Escreva para o MARVIN"
+- takeScreenshot: "${EVIDENCE_DIR}/01-main"
+- tapOn: "Digitar"
+- assertVisible: "Escreva para o MARVIN"
+- inputText: "teste de teclado"
+- takeScreenshot: "${EVIDENCE_DIR}/02-keyboard"
+- tapOn: "Fechar teclado"
+- assertNotVisible: "Escreva para o MARVIN"
+- tapOn: "Biblioteca"
+- assertVisible: "Documentos"
+- tapOn: "Memórias"
+- assertVisible: "Nova memória"
+- takeScreenshot: "${EVIDENCE_DIR}/03-library"
+- tapOn: "Atividades"
+- assertVisible: "Minhas tarefas"
+- takeScreenshot: "${EVIDENCE_DIR}/04-tasks"
+- tapOn: "Dispositivos"
+- assertVisible: "Vincular computador"
+- tapOn: "MARVIN"
+- tapOn: "Configurações"
+- tapOn: "Voz e fala"
+- assertVisible: "Responder em voz alta"
+- scrollUntilVisible:
+    element:
+      text: "Saída de áudio"
+    direction: DOWN
+- assertVisible: "Automática"
+- takeScreenshot: "${EVIDENCE_DIR}/05-voice"
+- stopApp
+- openLink: "marvin://pair?v=1&h=192.168.1.12&p=8770&c=123456&k=%2B%2FAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA%3D&n=PC%20do%20simulador&s=simulator-test"
+- runFlow:
+    when:
+      visible: "Open"
+    commands:
+      - tapOn: "Open"
+- assertVisible: ".*PC do simulador.*"
+- assertVisible: "São iguais · vincular"
+- takeScreenshot: "${EVIDENCE_DIR}/06-cold-pair"
+- openLink: "marvin://pair?v=1&h=192.168.1.12&p=8770&c=123456&k=%2B%2FAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA%3D&n=Outro%20PC%20do%20simulador&s=simulator-test"
+- assertVisible: ".*Outro PC do simulador.*"
+- assertVisible: "São iguais · vincular"
+- takeScreenshot: "${EVIDENCE_DIR}/07-warm-pair"
+- openLink: "marvin://pair?v=1&k=%invalid"
+- assertVisible: "Link de pareamento inválido.*"
+- takeScreenshot: "${EVIDENCE_DIR}/08-invalid-pair"
