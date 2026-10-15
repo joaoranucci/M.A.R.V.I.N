@@ -118,3 +118,7 @@ A versão anterior do código está em `data/upgrade_backups/pre_v070`. Para rec
 ### Teste visual da Presença
 
 Inicie `python -m marvin.desktop --no-open --no-audio --data-dir data/presence-test --workspace data/presence-test/projects`; em outro terminal, execute `cd desktop` e `node smoke.mjs` (requer Edge instalado). O teste cria somente o projeto `interface-validada` nessa pasta isolada e salva capturas em `data`. Os testes de API ficam em `tests/test_presence_v080.py`.
+
+### Desligar o computador
+
+Diga **“Marvin, desligue meu computador”** (também aceita “desliga o PC” ou “desligar meu notebook”). Esse pedido explícito envia diretamente `shutdown.exe /s /t 0`, sem confirmação adicional do MARVIN, sem depender da IA e sem `/f`. O Windows pode impedir o encerramento se algum aplicativo tiver trabalho não salvo. Não há contagem regressiva. Menções, explicações e negações não acionam esse comando. Os testes simulam o processo; não desligam a máquina.

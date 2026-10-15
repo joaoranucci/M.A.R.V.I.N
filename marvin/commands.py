@@ -27,6 +27,8 @@ def normalize(text: str) -> str:
 
 
 def detect_single(n: str, original: str) -> Command:
+    if re.fullmatch(r"(?:desligue|desliga|desligar) (?:o |meu |o meu |esse |este )?(?:computador|pc|notebook|maquina)(?: agora)?(?:,? por favor)?", n):
+        return Command("local", "power:shutdown")
     if n in {"que horas sao", "me diga as horas", "qual e a hora", "que dia e hoje", "data de hoje", "horas"}:
         return Command("local", "relogio")
 
@@ -112,6 +114,9 @@ def looks_current(text: str) -> bool:
 
 
 def execute_local(value: str) -> str:
+    if value == "power:shutdown":
+        from .power import shutdown_computer
+        return shutdown_computer()
     if value == "relogio":
         return "Agora são " + datetime.now().strftime("%H:%M") + ", de " + datetime.now().strftime("%d/%m/%Y") + "."
     if value == "list-apps":
