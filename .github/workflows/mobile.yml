@@ -2,7 +2,7 @@ name: Mobile Android and iOS
 on:
   push:
     branches: [main, 'codex/ios-first-release']
-    paths: ['mobile/**', '.github/workflows/mobile.yml', 'docs/mobile/**']
+    paths: ['mobile/**', '.github/workflows/mobile.yml', 'docs/mobile/**', 'marvin/gateway/**', 'tests/test_mobile*.py', 'requirements-mobile-gateway.txt']
   pull_request:
     paths: ['mobile/**', '.github/workflows/mobile.yml', 'docs/mobile/**']
 permissions:
@@ -64,3 +64,70 @@ jobs:
         if: always()
         run: |
           if test -f "$RUNNER_TEMP/marvin-tls.pid"; then kill "$(cat "$RUNNER_TEMP/marvin-tls.pid")" || true; fi
+  gateway:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install gateway dependencies without desktop audio
+        run: python -m pip install -r requirements-core.txt -r requirements-mobile-gateway.txt httpx==0.28.1
+      - name: Test shared Gateway contracts, device tokens and identity migration
+        run: python -m unittest discover -s tests -p 'test_mobile*.py' -v
+  android-native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - run: npm ci --no-audit --no-fund
+      - name: Generate Android project through CNG
+        run: npx expo prebuild --platform android --no-install
+      - name: Compile the changed Kotlin module
+        working-directory: mobile/android
+        run: ./gradlew :marvin-native:compileDebugKotlin --no-daemon --max-workers=2
+  ios-app:
+    runs-on: macos-26
+    timeout-minutes: 50
+    defaults:
+      run:
+        working-directory: mobile
+    env:
+      CI: '1'
+      RCT_NO_LAUNCH_PACKAGER: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - name: Generate iOS project through CNG
+        run: npx expo prebuild --platform ios --no-install
+      - name: Install native pods
+        run: pod install --project-directory=ios
+      - name: Verify generated native configuration
+        run: node scripts/verify-ios-config.cjs
+      - name: Compile release app for iOS Simulator
+        run: xcodebuild -quiet -workspace ios/MARVIN.xcworkspace -scheme MARVIN -configuration Release -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath "$RUNNER_TEMP/marvin-ios-build" CODE_SIGNING_ALLOWED=NO build
+      - name: Package unsigned simulator app
+        run: ditto -c -k --keepParent "$RUNNER_TEMP/marvin-ios-build/Build/Products/Release-iphonesimulator/MARVIN.app" "$RUNNER_TEMP/MARVIN-iOS-Simulator.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MARVIN-iOS-Simulator
+          path: ${{ runner.temp }}/MARVIN-iOS-Simulator.zip
+          retention-days: 14

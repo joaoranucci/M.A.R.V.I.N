@@ -61,5 +61,9 @@
     "prebuild:android": "expo prebuild --platform android",
     "prebuild:ios": "expo prebuild --platform ios"
   },
-  "private": true
+  "private": true,
+  "allowScripts": {
+    "@shopify/react-native-skia@2.6.2": true,
+    "unrs-resolver@1.12.2": true
+  }
 }

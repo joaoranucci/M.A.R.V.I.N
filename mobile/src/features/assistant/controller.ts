@@ -11,7 +11,7 @@ import { needsPreview, onCommandUpdate, queueCommandUntilOnline, sendCommand, ty
 import { gateway } from '../gateway/api';
 import { GatewayError } from '../gateway/client';
 import { Approval, type TApproval } from '../gateway/schemas';
-import { createMemory, originLabel, recall } from '../memory/service';
+import { createMemory, recall } from '../memory/service';
 import { gatewayProvider } from '../providers/gatewayProvider';
 import { demoProvider, localProvider } from '../providers/localProviders';
 import type { AssistantProvider } from '../providers/types';

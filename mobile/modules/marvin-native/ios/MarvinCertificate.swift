@@ -136,9 +136,6 @@ enum MarvinCertificate {
           SecTrustSetNetworkFetchAllowed(trust, false) == errSecSuccess else { throw MarvinSecurityError.invalidCertificate }
     var trustError: CFError?
     guard SecTrustEvaluateWithError(trust, &trustError) else {
-      #if SWIFT_PACKAGE
-      print("TLS fixture evaluation:", String(describing: trustError), String(describing: SecTrustCopyResult(trust)))
-      #endif
       throw MarvinSecurityError.invalidCertificate
     }
     return leaf

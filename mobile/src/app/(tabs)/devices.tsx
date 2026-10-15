@@ -33,7 +33,9 @@ export default function Devices() {
   }, [connectivity.gateway]);
 
   useEffect(() => {
-    void loadDevices();
+    let active = true;
+    void Promise.resolve().then(() => { if (active) return loadDevices(); });
+    return () => { active = false; };
   }, [loadDevices]);
 
   const refresh = async () => {
