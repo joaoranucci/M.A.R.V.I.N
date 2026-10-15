@@ -2,6 +2,31 @@
 
 Assistente pessoal para Windows com voz opcional, conversa Gemini, projetos locais e registro persistente de tarefas. Esta versão implementa uma etapa funcional da evolução JARVIS. A interrupção de fala usa detecção local; visão autônoma completa e hardware vestível continuam fora desta entrega.
 
+## AIML API
+
+O MARVIN aceita `MARVIN_LLM_PROVIDER=aiml`, `AIML_API_KEY` e
+`AIML_MODEL=openai/gpt-5-5` no `.env`. A integração usa
+`https://api.aimlapi.com/v1/chat/completions` para conversa e chamadas de
+ferramentas, preservando confirmações e registro das ações. A chave não deve
+incluir os delimitadores `<` e `>`. Não há troca automática para outro provedor.
+
+Reabra o programa após atualizar o código. Alterações posteriores no `.env`
+podem ser aplicadas por **RECARREGAR IA** no modo clássico. Na interface Presença, reabra o programa. Use **TESTAR IA** ou
+**DIAGNOSTICO_IA.bat** para uma geração curta que usa o saldo/cota do provedor.
+`DIAGNOSTICO_GOOGLE.bat` permanece como atalho legado e também testa o provedor
+selecionado. Para voltar ao Gemini, configure `MARVIN_LLM_PROVIDER=gemini`.
+
+Pesquisa Google grounding permanece exclusiva do Gemini. Com AIML, selecione
+Brave ou SearXNG e configure as credenciais/URL correspondentes. Conversa e
+ferramentas locais não dependem de um provedor de pesquisa.
+
+Validação em 14/10/2026: o teste remoto AIML com o modelo solicitado respondeu
+HTTP 403 (acesso negado). Isso não confirma validade da chave nem acesso ao
+modelo; é necessário conferir permissões da chave/conta no painel AIML.
+Contrato usado: [documentação AIML de ferramentas](https://docs.aimlapi.com/capabilities/function-calling).
+
+
+
 ## Interface Presença
 
 Execute **INICIAR_PRESENCA.bat**. Os atalhos habituais também usam a nova interface quando compilada; `EXECUTAR.bat main.py --legacy` abre a interface clássica.
@@ -25,6 +50,10 @@ Abra **C MARVIN.bat** ou **INICIAR.bat**. A instalação existente não precisa 
 Para uma instalação nova, use Python 3.12 x64 e **INSTALAR.bat**. Para instalar apenas texto e Gemini: `INSTALAR.bat --core-only`. O instalador preserva `.env`, `data`, modelos e projetos; um ambiente inválido é renomeado antes de criar outro. Instalação limpa e downloads não foram repetidos nesta entrega.
 
 **DIAGNOSTICO.bat** informa versões, hardware e capacidades sem capturar áudio nem chamar APIs. **TESTAR.bat** executa os testes automatizados. O botão **TESTAR GOOGLE** faz uma listagem e geração curta usando a cota do projeto configurado.
+
+Se editar a chave no `.env` com o programa aberto, clique em **RECARREGAR IA** e depois **TESTAR GOOGLE**. A recarga só é permitida sem tarefa em andamento, substitui a conexão Gemini e mantém memória, diretórios e controles de áudio. Arquivos UTF-8 com BOM e chaves entre aspas são aceitos. Uma chave ausente ou de exemplo não substitui a configuração em uso.
+
+O diagnóstico local agora mostra a existência do `.env`, o ambiente Python ativo e próximos passos, sem mostrar a chave. Uma resposta vazia do Gemini não é registrada como conversa bem-sucedida; outro candidato configurado é tentado.
 
 ## O que mudou
 

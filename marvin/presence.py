@@ -371,7 +371,8 @@ class Presence:
         projects = self.workspace.list_projects()['projects']
         facts = self.memory.list_facts(50)
         return {'projects': projects, 'tasks': tasks, 'reminders': self.runtime.scheduler.list_reminders(),
-                'facts': facts, 'capabilities': {'gemini': bool(self.brain.api_key and self.brain.api_key != 'COLE_SUA_CHAVE_AQUI'),
+                'facts': facts, 'capabilities': {'llm_provider': self.brain.provider, 'llm_model': self.brain.configured_model,
+                'gemini': self.brain.provider == 'gemini' and bool(self.brain.api_key and self.brain.api_key != 'COLE_SUA_CHAVE_AQUI'),
                 'brave': bool(os.getenv('BRAVE_SEARCH_API_KEY')), 'searxng': bool(os.getenv('SEARXNG_URL'))}}
 
     def project_details(self, project):

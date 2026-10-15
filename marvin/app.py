@@ -10,8 +10,8 @@ import webbrowser
 import tkinter as tk
 from tkinter import messagebox, scrolledtext, ttk
 
-from .config import ROOT, VERSION, load_config, save_preferences
-from .brain import Brain
+from .config import ROOT, VERSION, load_config, save_preferences, reload_gemini_config
+from .brain import Brain, safe_error_detail
 from .action_agent import ActionAgent, project_intent
 from .workspace import ProjectWorkspace
 from .self_edit import SourceEditor
@@ -134,7 +134,8 @@ class MarvinApp:
         tools2.pack(fill="x", padx=20, pady=3)
         self.button(tools2, "AGENTE VISUAL", self.visual_from_text)
         self.button(tools2, "TESTAR VOZ", self.test_voice)
-        self.button(tools2, "TESTAR GOOGLE", self.test_google)
+        self.button(tools2, "TESTAR IA", self.test_google)
+        self.button(tools2, "RECARREGAR IA", self.reload_ai)
         self.button(tools2, "LISTAR APPS", lambda: self.process("liste os aplicativos"))
         self.status = tk.Label(self.window, text="Pronto", bg=BG, fg=MUTED, anchor="w", wraplength=960)
         self.status.pack(fill="x", padx=20, pady=(5, 12))
@@ -640,17 +641,37 @@ class MarvinApp:
                 self.post("finish")
         self.worker(worker, name="MARVIN-voice-test")
 
+    def reload_ai(self):
+        if self.busy or self.visual_running:
+            self.append("status", "Aguarde a tarefa terminar antes de recarregar a IA.")
+            return
+        try:
+            reload_gemini_config(ROOT)
+            replacement = Brain(self.memory)
+        except Exception as exc:
+            self.append("status", "Configuração não alterada: " + safe_error_detail(exc))
+            return
+        previous = self.brain
+        self.brain = replacement
+        self.action_agent.brain = replacement
+        try:
+            previous.close()
+        except Exception:
+            pass
+        self.mode.configure(text="LOCAL · API ainda não validada")
+        self.append("status", f"IA recarregada: {replacement.provider} / {replacement.configured_model}. Use TESTAR IA para validar acesso e cota.")
+
     def test_google(self):
         if self.busy:
             return
         self.token = TaskControl()
         self.set_busy()
-        self.post("note", "Teste de listagem e uma geração curta: usa a cota configurada da API.")
+        self.post("note", f"Teste de {self.brain.provider}: geração curta, usa a cota/saldo configurado da API.")
         def worker():
             try:
                 self.post("note", self.brain.diagnose())
             except Exception as exc:
-                self.post("note", "Diagnóstico Google: " + str(exc)[:250])
+                self.post("note", "Diagnóstico IA: " + safe_error_detail(exc))
             finally:
                 self.post("finish")
         self.worker(worker, name="MARVIN-google-test")

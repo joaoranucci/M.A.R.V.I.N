@@ -84,6 +84,35 @@ def collect_health(root=ROOT, data_dir=None, include_hardware=False):
               "data_directory": str(data), "dependencies": versions, "capabilities": capabilities,
               "timezone": TIMEZONE_SOURCE, "node_installed": bool(shutil.which("node")),
               "free_disk_gib": round(shutil.disk_usage(root).free / 1024**3, 1)}
+    report["configuration"] = {
+        "env_file_exists": (root / ".env").is_file(),
+        "virtual_environment_active": sys.prefix != sys.base_prefix,
+        "gemini_key_present": bool(os.getenv("GEMINI_API_KEY", "").strip())
+            and os.getenv("GEMINI_API_KEY", "").strip() != "COLE_SUA_CHAVE_AQUI",
+    }
+    actions = []
+    if not report["configuration"]["env_file_exists"]:
+        actions.append("Crie .env ao lado de INICIAR.bat usando .env.example como modelo.")
+    if not report["configuration"]["gemini_key_present"]:
+        actions.append("Preencha GEMINI_API_KEY no .env e use RECARREGAR IA.")
+    if versions["google-genai"] == "ausente":
+        actions.append("Execute INSTALAR.bat --core-only para instalar o SDK Gemini.")
+    if any(versions[name] == "ausente" for name in ("sounddevice", "vosk", "pygame", "edge-tts")):
+        actions.append("Execute INSTALAR.bat para instalar as dependências de voz.")
+    if report["configuration"]["gemini_key_present"] and versions["google-genai"] != "ausente":
+        actions.append("Use TESTAR GOOGLE: chave presente não comprova acesso nem cota.")
+    report["next_actions"] = actions
+    provider = os.getenv('MARVIN_LLM_PROVIDER', 'gemini').strip().lower()
+    report['configuration']['llm_provider'] = provider
+    if provider == 'aiml':
+        present = bool(os.getenv('AIML_API_KEY', '').strip())
+        report['configuration']['aiml_key_present'] = present
+        report['capabilities']['ia_selecionada'] = 'AIML configurada; acesso/saldo não validado' if present else 'AIML sem chave'
+        report['next_actions'] = [
+            'Use TESTAR IA para validar acesso e saldo AIML.' if present
+            else 'Preencha AIML_API_KEY no .env e use RECARREGAR IA.',
+            'Para pesquisa com AIML, configure Brave ou SearXNG; grounding Google exige Gemini.',
+        ] + [action for action in actions if 'INSTALAR' in action]
     if include_hardware:
         report["hardware"] = hardware()
     return report

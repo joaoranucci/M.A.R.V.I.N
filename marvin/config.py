@@ -17,7 +17,7 @@ def load_config(root: Path = ROOT) -> Path:
     explicit = set(os.environ)
     try:
         from dotenv import load_dotenv
-        load_dotenv(root / ".env")
+        load_dotenv(root / ".env", encoding="utf-8-sig")
     except ImportError:
         # Text/local mode must boot without installing any optional dependency.
         path = root / ".env"
@@ -37,6 +37,28 @@ def load_config(root: Path = ROOT) -> Path:
         except (OSError, ValueError, AttributeError):
             pass
     return data
+
+
+def reload_gemini_config(root: Path = ROOT) -> None:
+    """Explicit AI reload; legacy function name retained for callers."""
+    from dotenv import dotenv_values
+    path = Path(root) / ".env"
+    if not path.is_file():
+        raise ValueError("Arquivo .env não encontrado ao lado de INICIAR.bat.")
+    values = dotenv_values(path, encoding="utf-8-sig", interpolate=False)
+    provider = (values.get('MARVIN_LLM_PROVIDER') or 'gemini').strip().lower()
+    if provider not in ('gemini', 'aiml'):
+        raise ValueError('MARVIN_LLM_PROVIDER deve ser gemini ou aiml.')
+    key_name = 'AIML_API_KEY' if provider == 'aiml' else 'GEMINI_API_KEY'
+    key = (values.get(key_name) or "").strip()
+    if not key or key == "COLE_SUA_CHAVE_AQUI":
+        raise ValueError(f"Preencha {key_name} no .env antes de recarregar.")
+    # Validate everything before replacing the currently working configuration.
+    updates = {key_name: key, 'MARVIN_LLM_PROVIDER': provider}
+    for name in ("GEMINI_MODEL", "AIML_MODEL", "MARVIN_API_TIMEOUT_MS"):
+        if values.get(name):
+            updates[name] = values[name].strip()
+    os.environ.update(updates)
 
 
 def save_preferences(data: Path, values: dict) -> None:
