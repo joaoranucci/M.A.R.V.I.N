@@ -163,6 +163,19 @@ class Memory:
             ).fetchall()
         return [(str(row[0]), str(row[1])) for row in reversed(rows)]
 
+    def messages_since(self, after_id: int = 0, limit: int = 100) -> list[dict]:
+        """Shared conversation history for other devices, oldest first."""
+        with connect(self.db_path) as connection:
+            if after_id > 0:
+                rows = connection.execute(
+                    "SELECT id, role, content, created_at FROM messages WHERE id > ? ORDER BY id LIMIT ?",
+                    (int(after_id), min(max(int(limit), 1), 500))).fetchall()
+            else:
+                rows = list(reversed(connection.execute(
+                    "SELECT id, role, content, created_at FROM messages ORDER BY id DESC LIMIT ?",
+                    (min(max(int(limit), 1), 500),)).fetchall()))
+        return [dict(row) for row in rows]
+
     def add_pair(self, question: str, answer: str) -> None:
         with connect(self.db_path) as connection:
             connection.executemany(

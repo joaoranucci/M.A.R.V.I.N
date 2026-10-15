@@ -1,0 +1,33 @@
+MARVIN - VALIDACAO DA COLECAO
+Data: 15/10/2026
+
+Entrada: Academia.edu_Bundle_-_JAVA_SCRIPT_O_GUIA_DEFINITIVO_PT_BR_.zip
+38 documentos: 37 PDFs e 1 Word.
+5.758 paginas PDF. Os arquivos originais nao foram alterados.
+
+Preparacao:
+- Os 38 originais foram conferidos por tamanho e SHA-256.
+- Todas as paginas PDF foram contabilizadas em ordem, inclusive capas e brancos.
+- Foram gerados 39 arquivos Markdown, com 10.936.658 bytes ao todo.
+- Livro JavaScript: parte 1, paginas 1-535; parte 2, paginas 536-1080.
+- Nenhum texto preparado ultrapassa os limites atuais de caracteres ou trechos.
+- Foram recuperados mapeamentos de fontes invalidos no livro de Windows Phone
+  para preservar numeros e ligaduras na extracao textual.
+
+Teste funcional em uma instancia temporaria da MARVIN Vault API v0.3.0:
+- Primeira execucao: 39 importados, 0 duplicados, 39 verificados, 4.339 trechos.
+- O conteudo de todos os trechos salvos foi comparado com o texto preparado.
+- Consultas de JavaScript, ApplicationSettings e jiu-jitsu localizaram fontes.
+- Segunda execucao: 0 importados, 39 duplicados, 39 verificados, 4.339 trechos.
+- A contagem de documentos e trechos permaneceu igual na segunda execucao.
+- Token incorreto foi recusado antes de gravar documentos.
+- Arquivo alterado foi recusado antes de contatar a API.
+- 11 testes passaram.
+
+O teste usou um cofre temporario, sem acesso ao computador do usuario.
+O arquivo BAT foi preparado para Windows; os testes Python/API rodaram em Linux.
+Execute IMPORTAR_TUDO.bat no seu PC para carregar os documentos no seu cofre.
+
+Limites: esta colecao contem texto extraivel, sem transcricao de imagens ou
+diagramas. Disposicao de tabelas, formulas e codigo pode exigir consulta ao
+original. O processo cria uma biblioteca de consulta; nao treina um modelo.

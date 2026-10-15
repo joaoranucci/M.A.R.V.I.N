@@ -345,6 +345,10 @@ class MarvinApp:
                 self.append("status", str(exc)[:350])
 
     def process(self, question, task_id=None):
+        # MARVIN_VAULT_RUNTIME_V032
+        from .vault_gui import route_vault as _route_vault
+        if _route_vault(self, question, task_id=task_id):
+            return
         self.interrupted_listening = False
         n = normalize(request_text(question))
         if n in {"pare", "para", "cancelar", "cancele", "pare de falar", "parar"}:

@@ -1,0 +1,79 @@
+MARVIN - BIBLIOTECA PREPARADA
+
+Este pacote prepara o conteudo textual dos 38 documentos que voce enviou
+para a MARVIN Vault API v0.3, usando a API e o cofre que voce ja instalou.
+
+COMO IMPORTAR
+
+1. Extraia este ZIP inteiro. Pode usar, por exemplo:
+   C:\M.A.R.V.I.N\Biblioteca_pronta
+
+2. Na pasta onde voce instalou a MARVIN Vault API, execute INICIAR_API.bat.
+   Digite a senha do seu cofre e deixe essa janela aberta.
+
+3. Nesta pasta, de dois cliques em IMPORTAR_TUDO.bat.
+   Nao execute o arquivo diretamente de dentro do ZIP.
+
+4. Aguarde o RESULTADO. Na primeira importacao completa, sem copias anteriores
+   desta colecao, o esperado e:
+   importado: 39 | duplicado: 0 | verificado: 39 | trechos: 4339
+
+5. No MARVIN com a integracao instalada, teste:
+   busque na biblioteca: JavaScript
+   busque na biblioteca: Scrum
+
+A importacao usa a categoria biblioteca. Nao exige Ollama para gravar ou
+buscar trechos. Para gerar respostas com "pergunte a biblioteca:", use o
+Ollama conforme as instrucoes da sua API.
+
+O QUE ESTA INCLUIDO
+
+- Os 38 originais: 37 PDFs (5.758 paginas) e 1 documento Word.
+- Foram preparados 39 arquivos de texto Markdown em conteudos.
+- O livro JAVA_SCRIPT_O_GUIA_DEFINITIVO_PT_BR.pdf foi dividido em duas partes
+  para caber nos limites da API; nenhuma pagina foi descartada nessa divisao.
+- Cada parte registra o arquivo original. Os PDFs tem marcadores [PAGINA N],
+  usando a ordem do arquivo, incluindo capas, e nao a numeracao impressa.
+- manifesto.json relaciona cada original, suas partes e os hashes dos textos.
+- Os PDFs originais continuam no ZIP que voce enviou; nao estao duplicados aqui.
+
+O QUE O IMPORTADOR FAZ
+
+- Confere todos os arquivos antes de enviar o primeiro documento.
+- Le o token local do mesmo cofre usado pela API.
+- Envia os textos um a um para http://127.0.0.1:8765.
+- Confere o hash, a categoria e as contagens retornadas por cada documento.
+- Mostra importado ou duplicado. Repetir este mesmo pacote na mesma categoria
+  nao cria novas copias dos arquivos que ja foram concluidos.
+
+Esta pasta nao recria o cofre. Nao execute CRIAR_COFRE.bat para importar.
+Se a execucao for interrompida, os documentos concluidos continuam salvos.
+Espere a API terminar qualquer pedido em andamento antes de executar novamente.
+
+LIMITES DO CONTEUDO
+
+Foi incluido o texto extraivel. Imagens e diagramas nao foram transcritos;
+paginas apenas visuais podem conter somente o marcador de pagina. Tabelas,
+formulas e indentacao de codigo podem perder a disposicao visual original.
+Para detalhes visuais, consulte o PDF original.
+
+Os documentos formam uma biblioteca consultavel. Importar nao treina os
+pesos do modelo nem faz o MARVIN memorizar todos os livros de uma vez.
+
+SE APARECER ERRO
+
+- API sem resposta: abra INICIAR_API.bat, desbloqueie e mantenha a janela aberta.
+- Token nao encontrado/recusado: confira se API e importador usam o mesmo cofre.
+  O padrao e %LOCALAPPDATA%\MarvinVault\api-token.txt.
+- Documento ausente/alterado: extraia o ZIP inteiro novamente.
+- Use Python 3.11 ou superior, como na instalacao da MARVIN Vault API.
+
+OPCOES NO TERMINAL (SOMENTE SE PRECISAR)
+
+Conferir o pacote sem conectar a API:
+  py -3 importar_tudo.py --conferir-arquivos
+
+Se voce usa outra porta ou outro arquivo de token:
+  py -3 importar_tudo.py --base-url http://127.0.0.1:8765 --token-file "C:\caminho\api-token.txt"
+
+Mantenha a mesma categoria se quiser evitar duplicatas em novas execucoes.

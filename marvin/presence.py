@@ -56,6 +56,9 @@ class Presence:
         self.focus_requested = ''
         self.seq = 0
         self.events = deque(maxlen=60)
+        # Observers such as the mobile gateway; called outside the state lock.
+        self.listeners = []
+        self.task_origins = {}
         self.messages = deque(({'role': 'assistant' if role == 'model' else 'user', 'text': text}
                                for role, text in self.memory.recent(limit=12)), maxlen=30)
         self.sources = []
@@ -74,7 +77,15 @@ class Presence:
     def emit(self, kind, **payload):
         with self.guard:
             self.seq += 1
-            self.events.append({'id': self.seq, 'type': kind, 'time': datetime.now(timezone.utc).isoformat(), **payload})
+            event = {'id': self.seq, 'type': kind, 'time': datetime.now(timezone.utc).isoformat(), **payload}
+            self.events.append(event)
+            listeners = list(self.listeners)
+        for listener in listeners:
+            try:
+                listener(dict(event))
+            except Exception:
+                # An observer must never break the runtime or replay an effect.
+                pass
 
     def set_phase(self, phase, status=None):
         with self.guard:
@@ -247,31 +258,56 @@ class Presence:
             return True
         return False
 
-    def submit(self, text):
+    def submit(self, text, origin='desktop'):
         text = str(text).strip()
         if not text or len(text) > 12000:
             raise ValueError('Escreva um pedido de até 12.000 caracteres.')
+        if origin not in {'desktop', 'mobile'}:
+            raise ValueError('Origem de pedido inválida.')
         with self.guard:
             if self.stop.is_set():
                 raise ValueError('O MARVIN está encerrando.')
-            if self.ui_command(text):
+            # Window commands from another device must not change this screen.
+            if origin == 'desktop' and self.ui_command(text):
                 if not self.busy:
                     self.wake_pause.clear()
                     self.set_phase('idle', 'Pronto')
                 return {'ui': True}
             n = normalize(request_text(text))
-            if n in {'pare', 'cancelar', 'cancele', 'pare de falar'}:
+            if origin == 'desktop' and n in {'pare', 'cancelar', 'cancele', 'pare de falar'}:
                 self.cancel()
                 return {'cancelled': True}
             if self.jobs.full():
                 raise ValueError('Há oito pedidos na fila. Aguarde ou cancele.')
             task = self.runtime.prepare(text)
-            self.messages.append({'role': 'user', 'text': text})
-            self.keyboard = False
+            self.task_origins[task['id']] = origin
+            self.messages.append({'role': 'user', 'text': text, 'origin': origin})
+            if origin == 'desktop':
+                self.keyboard = False
             self.jobs.put_nowait((text, task['id']))
-            if re.match(r'^(pesquis|busqu|procur|consult)', n):
+            if origin == 'desktop' and re.match(r'^(pesquis|busqu|procur|consult)', n):
                 self.view = 'search'
-            return {'task_id': task['id']}
+            return {'task_id': task['id'], 'queue': self.jobs.qsize()}
+
+    def cancel_task(self, task_id):
+        """Cancel one task without clearing other devices' queued requests."""
+        with self.guard:
+            task = self.runtime.tasks.get(task_id)
+            if task is None:
+                raise FileNotFoundError('Tarefa não encontrada.')
+            if self.runtime.active_id == task_id:
+                self.token.set()
+                self.runtime.cancel()
+                if self.task_origins.get(task_id, 'desktop') == 'desktop':
+                    voice.cancel_speech()
+                self.approval_answer = False
+                self.approval_event.set()
+                return 'cancelling'
+            if task['state'] == 'queued':
+                # run_jobs keeps the queue entry; Runtime.run skips non-queued tasks.
+                self.runtime.tasks.set_state(task_id, 'cancelled', 'Cancelado na fila')
+                return 'cancelled'
+            return task['state']
 
     def run_jobs(self):
         while not self.stop.is_set():
@@ -295,19 +331,21 @@ class Presence:
                 self.busy = True
                 self.wake_pause.set()
                 self.set_phase('thinking', 'Organizando seu pedido')
+            origin = self.task_origins.pop(task_id, 'desktop')
             try:
                 result = self.runtime.run(question, task_id=task_id, control=self.token)
                 answer = result['answer']
                 with self.guard:
-                    self.messages.append({'role': 'assistant', 'text': answer, 'state': result['state']})
+                    self.messages.append({'role': 'assistant', 'text': answer, 'state': result['state'], 'origin': origin})
                     self.sources = [{'title': m[0], 'url': m[1]} for m in re.findall(r'\[([^\]]+)\]\((https?://[^\s)]+)\)', answer)][:8]
-                self.emit('answer', message=answer, state=result['state'])
-                if self.audio_enabled and os.getenv('MARVIN_SPEAK', 'true') == 'true' and not self.token.is_set() and not self.privacy:
+                self.emit('answer', message=answer, state=result['state'], task_id=task_id, origin=origin)
+                # A phone request is spoken by the phone, never by the PC speakers.
+                if origin == 'desktop' and self.audio_enabled and os.getenv('MARVIN_SPEAK', 'true') == 'true' and not self.token.is_set() and not self.privacy:
                     self.set_phase('speaking', 'Preparando a voz')
                     voice.speak(answer, voice=os.getenv('MARVIN_VOICE', voice.DEFAULT_VOICE),
                                 cancel_event=self.token, status=self.audio_status)
             except Exception as exc:
-                self.emit('task.error', message=safe_error_detail(exc))
+                self.emit('task.error', message=safe_error_detail(exc), task_id=task_id, origin=origin)
             finally:
                 with self.guard:
                     self.busy = False

@@ -1,0 +1,101 @@
+{
+  "expo": {
+    "name": "MARVIN",
+    "slug": "marvin-mobile",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "marvin",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#04070C",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "dev.marvin.mobile"
+    },
+    "android": {
+      "package": "dev.marvin.mobile",
+      "versionCode": 1,
+      "allowBackup": false,
+      "adaptiveIcon": {
+        "backgroundColor": "#04070C",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "blockedPermissions": [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_MEDIA_VIDEO",
+        "android.permission.READ_MEDIA_AUDIO",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-sqlite",
+      "expo-secure-store",
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "O MARVIN usa o microfone somente quando você toca no núcleo ou ativa a escuta por “Marvin”.",
+          "speechRecognitionPermission": "O MARVIN transcreve sua fala para entender o pedido.",
+          "androidSpeechServicePackages": ["com.google.android.googlequicksearchbox", "com.google.android.tts", "com.google.android.as"]
+        }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "O MARVIN usa o microfone somente quando você pede.",
+          "enableBackgroundPlayback": false,
+          "recordAudioAndroid": true
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "A câmera é usada apenas para ler o QR Code de vinculação com o seu computador.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false,
+          "barcodeScannerEnabled": true
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#38D6FF"
+        }
+      ],
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./node_modules/@expo-google-fonts/space-grotesk/500Medium/SpaceGrotesk_500Medium.ttf",
+            "./node_modules/@expo-google-fonts/space-grotesk/600SemiBold/SpaceGrotesk_600SemiBold.ttf"
+          ]
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#04070C",
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 160
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "buildArchs": ["arm64-v8a", "x86_64"]
+          }
+        }
+      ],
+      "./plugins/withShareIntent.js"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

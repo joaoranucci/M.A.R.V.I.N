@@ -45,6 +45,7 @@ def main():
     parser.add_argument('--no-audio', action='store_true')
     parser.add_argument('--data-dir')
     parser.add_argument('--workspace')
+    parser.add_argument('--mobile', action='store_true', help='Ativa o gateway para o MARVIN Mobile')
     args = parser.parse_args()
     if not (ROOT/'desktop/dist/index.html').is_file():
         raise SystemExit('Interface não compilada. Execute INSTALAR_INTERFACE.bat.')
@@ -68,8 +69,19 @@ def main():
     url = origin + '/bootstrap?key=' + token
     session_file = presence.data_dir/'presence-session.json'
     session_file.write_text(json.dumps({'origin':origin,'url':url,'pid':os.getpid()}),encoding='utf-8')
+    gateway = None
     try:
         presence.start()
+        from .gateway.config import GatewayConfig, gateway_enabled
+        if gateway_enabled() or args.mobile:
+            try:
+                from .gateway.server import Gateway
+                gateway = Gateway(GatewayConfig.from_env(presence.data_dir), presence).start_background()
+                presence.emit('mobile.gateway', message=gateway.describe())
+                print(gateway.describe())
+            except Exception as exc:
+                # The desktop keeps working without the phone link.
+                presence.emit('system.error', message='Gateway mobile indisponível: ' + str(exc)[:200])
         if args.browser or args.no_open:
             if not args.no_open: webbrowser.open(url)
             while thread.is_alive(): time.sleep(.25)
@@ -82,6 +94,8 @@ def main():
     except KeyboardInterrupt:
         pass
     finally:
+        if gateway is not None:
+            gateway.close()
         server.should_exit = True
         presence.close()
         listener.close()
