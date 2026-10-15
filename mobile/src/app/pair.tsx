@@ -1,6 +1,6 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Banner, Button, Card, Field, Segmented } from '../components/ui';
 import { MarvinNative } from '../../modules/marvin-native';
@@ -15,34 +15,31 @@ export default function Pair() {
     .filter(([key]) => ['v', 'h', 'p', 'c', 'k', 'n', 's'].includes(key))
     .map(([key, value]) => key + '=' + encodeURIComponent(String(value))).join('&') : '';
   const rawLink = typeof params.payload === 'string' ? params.payload : legacy;
+  return <PairContent key={rawLink} rawLink={rawLink} invalidLink={!!params.invalid} />;
+}
+
+function PairContent({ rawLink, invalidLink }: { rawLink: string; invalidLink: boolean }) {
   const linked = rawLink ? parsePairingUrl(rawLink) : null;
   const [scanned, setScanned] = useState<PairingPayload | null>(null);
   const [mode, setMode] = useState<'qr' | 'manual'>('qr');
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
-  const revision = useRef(0);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
   const candidate = linked ?? scanned;
 
-  useEffect(() => {
-    revision.current++;
-    setScanned(null);
-    setDone(false);
-    setError(null);
-  }, [rawLink]);
+
 
   const run = async (payload: PairingPayload) => {
     if (busyRef.current) return;
-    const mine = revision.current;
     busyRef.current = true;
     setBusy(true);
     setError(null);
     try {
       await pairWith(payload);
-      if (mine === revision.current) setDone(true);
+      setDone(true);
     } catch (e) {
-      if (mine === revision.current) setError(e instanceof Error ? e.message : 'Falha ao vincular.');
+      setError(e instanceof Error ? e.message : 'Falha ao vincular.');
     } finally {
       busyRef.current = false;
       setBusy(false);
@@ -53,7 +50,7 @@ export default function Pair() {
     <ScrollView style={{ backgroundColor: colors.bg }} contentContainerStyle={styles.content}
       keyboardShouldPersistTaps="handled" contentInsetAdjustmentBehavior="automatic" automaticallyAdjustKeyboardInsets>
       <Text style={type.bodySecondary}>No MARVIN do computador, abra o pareamento do celular e gere o QR Code ou o código de seis dígitos.</Text>
-      {!!(params.invalid || (rawLink && !linked)) && <Banner tone="error" text="Link de pareamento inválido. Gere outro QR Code no computador." />}
+      {!!(invalidLink || (rawLink && !linked)) && <Banner tone="error" text="Link de pareamento inválido. Gere outro QR Code no computador." />}
       {done ? (
         <>
           <Banner tone="ok" text="Computador vinculado." />
@@ -107,7 +104,8 @@ function Scanner({ onPayload, busy }: { onPayload: (p: PairingPayload) => void; 
   return (
     <View style={styles.cameraWrap}>
       <CameraView style={StyleSheet.absoluteFill} facing="back" barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
-        onBarcodeScanned={busy || handled.current ? undefined : ({ data }) => {
+        onBarcodeScanned={busy ? undefined : ({ data }) => {
+          if (handled.current) return;
           const payload = parsePairingUrl(data);
           if (!payload) { setInvalid(true); return; }
           handled.current = true;

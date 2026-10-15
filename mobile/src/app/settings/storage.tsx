@@ -41,7 +41,9 @@ export default function StorageSettings() {
   }, []);
 
   useEffect(() => {
-    void load();
+    let active = true;
+    void Promise.resolve().then(() => { if (active) return load(); });
+    return () => { active = false; };
   }, [load, sync.pending, sync.lastSyncAt]);
 
   const wipe = () =>
@@ -76,7 +78,7 @@ export default function StorageSettings() {
   const stuck = outbox.filter((r) => r.state !== 'pending');
 
   return (
-    <ScrollView contentInsetAdjustmentBehavior="automatic" automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.bg }} contentContainerStyle={styles.content}>
+    <ScrollView contentInsetAdjustmentBehavior="automatic" automaticallyAdjustKeyboardInsets style={{ backgroundColor: colors.bg }} contentContainerStyle={styles.content}>
       <SectionTitle>Neste celular</SectionTitle>
       <Row title="Mensagens da conversa" subtitle={String(counts.messages ?? 0)} icon="chatbubbles-outline" />
       <Row title="Memórias" subtitle={String(counts.memories ?? 0)} icon="sparkles-outline" />

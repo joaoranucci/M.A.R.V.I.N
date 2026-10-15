@@ -16,7 +16,7 @@ import time
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ec, rsa
-from cryptography.x509.oid import NameOID
+from cryptography.x509.oid import ExtendedKeyUsageOID, NameOID
 
 
 def generate(root: Path, name: str) -> dict:
@@ -35,6 +35,7 @@ def generate(root: Path, name: str) -> dict:
             .not_valid_before(start).not_valid_after(end)
             .add_extension(x509.SubjectAlternativeName(names), critical=False)
             .add_extension(x509.BasicConstraints(ca=False, path_length=None), critical=True)
+            .add_extension(x509.ExtendedKeyUsage([ExtendedKeyUsageOID.SERVER_AUTH]), critical=False)
             .sign(key, hashes.SHA256()))
     (root / (name + ".pem")).write_bytes(cert.public_bytes(serialization.Encoding.PEM))
     (root / (name + ".der")).write_bytes(cert.public_bytes(serialization.Encoding.DER))

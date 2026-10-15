@@ -57,7 +57,7 @@ export default function ConnectionSettings() {
   }
 
   return (
-    <ScrollView contentInsetAdjustmentBehavior="automatic" automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.bg }} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    <ScrollView contentInsetAdjustmentBehavior="automatic" automaticallyAdjustKeyboardInsets style={{ backgroundColor: colors.bg }} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <Card tone={availability.tone === 'ok' ? 'cyan' : availability.tone === 'warn' ? 'amber' : undefined}>
         <Text style={type.label}>{availability.label}</Text>
         {!!availability.detail && <Text style={type.caption}>{availability.detail}</Text>}

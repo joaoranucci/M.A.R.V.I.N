@@ -18,11 +18,12 @@ type Tab = 'documents' | 'memories' | 'search';
 
 export default function Library() {
   const params = useLocalSearchParams<{ tab?: Tab }>();
-  const [tab, setTab] = useState<Tab>(params.tab ?? 'documents');
+  return <LibraryContent key={params.tab ?? 'documents'} initialTab={params.tab ?? 'documents'} />;
+}
+
+function LibraryContent({ initialTab }: { initialTab: Tab }) {
+  const [tab, setTab] = useState<Tab>(initialTab);
   const insets = useSafeAreaInsets();
-  useEffect(() => {
-    if (params.tab) setTab(params.tab);
-  }, [params.tab]);
   return (
     <View style={[styles.screen, { paddingTop: insets.top + space.md }]}>
       <Text style={[type.title, styles.title]} accessibilityRole="header">
@@ -157,9 +158,9 @@ function Memories() {
   }, [all, query, category]);
   const categories = useMemo(() => [...new Set([...CATEGORIES, ...all.map((m) => m.category)])], [all]);
   return (
-    <ScrollView contentInsetAdjustmentBehavior="automatic" automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled" contentContainerStyle={styles.list} refreshControl={<RefreshControl {...refresh} tintColor={colors.cyan} />} keyboardShouldPersistTaps="handled">
+    <ScrollView contentInsetAdjustmentBehavior="automatic" automaticallyAdjustKeyboardInsets contentContainerStyle={styles.list} refreshControl={<RefreshControl {...refresh} tintColor={colors.cyan} />} keyboardShouldPersistTaps="handled">
       <Field label="Buscar memórias" value={query} onChangeText={setQuery} placeholder="ex.: estudar" returnKeyType="search" />
-      <ScrollView contentInsetAdjustmentBehavior="automatic" automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+      <ScrollView contentInsetAdjustmentBehavior="automatic" automaticallyAdjustKeyboardInsets horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
         <Pressable onPress={() => setCategory(null)}>
           <Chip label="todas" tone={category === null ? 'cyan' : 'default'} />
         </Pressable>
@@ -226,7 +227,7 @@ function Search() {
     }
   };
   return (
-    <ScrollView contentInsetAdjustmentBehavior="automatic" automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled" contentContainerStyle={styles.list} keyboardShouldPersistTaps="handled">
+    <ScrollView contentInsetAdjustmentBehavior="automatic" automaticallyAdjustKeyboardInsets contentContainerStyle={styles.list} keyboardShouldPersistTaps="handled">
       {!online && <Banner tone="warn" text="A pesquisa usa a biblioteca do PC: conecte ao computador com o cofre aberto." />}
       <Field label="Pesquisar nos documentos" value={query} onChangeText={setQuery} placeholder="ex.: como o SQLite é protegido" onSubmitEditing={() => void run('search')} returnKeyType="search" />
       <View style={{ flexDirection: 'row', gap: space.md }}>

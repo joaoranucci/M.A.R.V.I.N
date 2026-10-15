@@ -1,13 +1,13 @@
 import { requireOptionalNativeModule } from 'expo-modules-core';
 import { platformRecognitionOptions } from './recognitionOptions';
-
-// Type-only import: a missing or Android-only module cannot crash iPhone startup.
-type SpeechModule = typeof import('expo-speech-recognition').ExpoSpeechRecognitionModule;
-const speech = requireOptionalNativeModule<SpeechModule>('ExpoSpeechRecognition');
 import { Platform } from 'react-native';
 import { log } from '../../core/logging/logger';
 import { settings } from '../../core/settings';
 import { fromRecognizerVolume, setLevel } from './level';
+
+// Type-only import: a missing or Android-only module cannot crash iPhone startup.
+type SpeechModule = typeof import('expo-speech-recognition').ExpoSpeechRecognitionModule;
+const speech = requireOptionalNativeModule<SpeechModule>('ExpoSpeechRecognition');
 
 /**
  * Single owner of the platform speech recognizer. Command capture and wake-word

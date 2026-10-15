@@ -133,8 +133,14 @@ enum MarvinCertificate {
           SecTrustSetAnchorCertificates(trust, [leaf] as CFArray) == errSecSuccess,
           SecTrustSetAnchorCertificatesOnly(trust, true) == errSecSuccess,
           SecTrustSetVerifyDate(trust, now as CFDate) == errSecSuccess,
-          SecTrustSetNetworkFetchAllowed(trust, false) == errSecSuccess,
-          SecTrustEvaluateWithError(trust, nil) else { throw MarvinSecurityError.invalidCertificate }
+          SecTrustSetNetworkFetchAllowed(trust, false) == errSecSuccess else { throw MarvinSecurityError.invalidCertificate }
+    var trustError: CFError?
+    guard SecTrustEvaluateWithError(trust, &trustError) else {
+      #if SWIFT_PACKAGE
+      print("TLS fixture evaluation:", String(describing: trustError), String(describing: SecTrustCopyResult(trust)))
+      #endif
+      throw MarvinSecurityError.invalidCertificate
+    }
     return leaf
   }
 }

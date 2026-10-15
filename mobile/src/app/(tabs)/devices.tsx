@@ -28,7 +28,7 @@ export default function Devices() {
     try {
       setDevices(await gateway.devices());
     } catch {
-      setDevices([]);
+      // Keep the last known list during a transient network failure.
     }
   }, [connectivity.gateway]);
 
@@ -70,7 +70,7 @@ export default function Devices() {
       <Text style={[type.title, styles.title]} accessibilityRole="header">
         Dispositivos
       </Text>
-      <ScrollView contentInsetAdjustmentBehavior="automatic" automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled" contentContainerStyle={styles.list} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} tintColor={colors.cyan} />}>
+      <ScrollView contentInsetAdjustmentBehavior="automatic" automaticallyAdjustKeyboardInsets contentContainerStyle={styles.list} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} tintColor={colors.cyan} />}>
         <Card tone={availability.tone === 'ok' ? 'cyan' : undefined}>
           <View style={styles.headerRow}>
             <View style={styles.pcIcon}>

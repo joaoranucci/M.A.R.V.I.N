@@ -66,7 +66,9 @@ export default function Diagnostics() {
   }, [connectivity, connection, sync.pending, sync.lastError]);
 
   useEffect(() => {
-    void collect();
+    let active = true;
+    void Promise.resolve().then(() => { if (active) return collect(); });
+    return () => { active = false; };
   }, [collect]);
 
   const test = async () => {
@@ -88,7 +90,7 @@ export default function Diagnostics() {
   };
 
   return (
-    <ScrollView contentInsetAdjustmentBehavior="automatic" automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.bg }} contentContainerStyle={styles.content}>
+    <ScrollView contentInsetAdjustmentBehavior="automatic" automaticallyAdjustKeyboardInsets style={{ backgroundColor: colors.bg }} contentContainerStyle={styles.content}>
       <View style={{ flexDirection: 'row', gap: space.md }}>
         <Button label="Testar conexão" icon="refresh" onPress={() => void test()} loading={busy} style={{ flex: 1 }} />
         <Button label="Compartilhar" icon="share-outline" onPress={() => void share()} style={{ flex: 1 }} />

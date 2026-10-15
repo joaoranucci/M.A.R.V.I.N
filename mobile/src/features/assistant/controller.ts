@@ -511,6 +511,7 @@ onInterruption((reason) => {
   const { phase } = get();
   if (phase === 'listening') {
     abortRecognition();
+    releaseFocus();
     rest();
     set({ notice: { tone: 'warn', text: interruptionText[reason] } });
   } else if (phase === 'speaking' || isSpeaking()) {
