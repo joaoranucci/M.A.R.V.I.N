@@ -4,7 +4,7 @@ import { MarvinNative } from '../../../modules/marvin-native';
 import { kvDelete, kvGet, kvSet } from '../db/database';
 
 /**
- * Device token lives only in the OS secure store (Android Keystore).
+ * Device token lives only in the OS secure store (Android Keystore / iOS Keychain).
  * The non-secret connection description (host, port, pin, server id) lives in SQLite.
  */
 export interface Connection {

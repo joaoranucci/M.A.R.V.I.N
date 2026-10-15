@@ -1,6 +1,7 @@
 package expo.modules.marvinnative
 
 import android.content.Context
+import expo.modules.kotlin.Promise
 import expo.modules.kotlin.exception.Exceptions
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
@@ -26,6 +27,7 @@ class MarvinNativeModule : Module() {
     }
 
     OnDestroy {
+      MarvinHttp.close()
       monitor?.stop()
       monitor = null
     }
@@ -36,9 +38,16 @@ class MarvinNativeModule : Module() {
       sendEvent("onSharedFiles", shared)
     }
 
+    Function("getTransportCapabilities") { mapOf("http" to "okhttp-pinned-v1") }
+    AsyncFunction("gatewayRequest") { options: Map<String, Any?>, promise: Promise ->
+      MarvinHttp.request(context, options, promise)
+    }
+    Function("cancelRequest") { id: String -> MarvinHttp.cancel(id) }
+
     // ---- TLS pinning ----------------------------------------------------------------
     Function("setPinnedKeys") { pins: List<String> ->
       MarvinTls.setPins(context, pins)
+      MarvinHttp.pinsChanged()
     }
 
     Function("getPinnedKeys") {
