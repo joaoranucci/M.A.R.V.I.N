@@ -67,7 +67,7 @@ export default function MemoryScreen() {
   const server = memory?.conflict ? (JSON.parse(memory.conflict) as TMemory | null) : null;
 
   return (
-    <ScrollView style={{ backgroundColor: colors.bg }} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    <ScrollView contentInsetAdjustmentBehavior="automatic" automaticallyAdjustKeyboardInsets style={{ backgroundColor: colors.bg }} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       {memory?.sync_state === 'conflict' && (
         <Banner tone="warn" text={`Alterada em outro dispositivo: “${server?.content ?? '?'}”. Qual versão manter?`}>
           <View style={{ flexDirection: 'row', gap: space.sm }}>

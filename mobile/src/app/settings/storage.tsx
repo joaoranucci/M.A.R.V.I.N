@@ -76,13 +76,13 @@ export default function StorageSettings() {
   const stuck = outbox.filter((r) => r.state !== 'pending');
 
   return (
-    <ScrollView style={{ backgroundColor: colors.bg }} contentContainerStyle={styles.content}>
+    <ScrollView contentInsetAdjustmentBehavior="automatic" automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.bg }} contentContainerStyle={styles.content}>
       <SectionTitle>Neste celular</SectionTitle>
       <Row title="Mensagens da conversa" subtitle={String(counts.messages ?? 0)} icon="chatbubbles-outline" />
       <Row title="Memórias" subtitle={String(counts.memories ?? 0)} icon="sparkles-outline" />
       <Row title="Tarefas, lembretes e notas" subtitle={String(counts.items ?? 0)} icon="checkbox-outline" />
       <Row title="Atividades registradas" subtitle={String(counts.activities ?? 0)} icon="pulse-outline" />
-      <Text style={type.caption}>Dados guardados no SQLite do app. O token de acesso ao PC fica no armazenamento seguro do Android.</Text>
+      <Text style={type.caption}>Dados guardados no SQLite do app. O token de acesso ao PC fica no armazenamento seguro do aparelho (Keychain no iPhone; Keystore no Android).</Text>
 
       <SectionTitle>Histórico de conversa</SectionTitle>
       <Text style={type.caption}>A conversa não vira memória permanente. Mensagens mais antigas que o prazo são apagadas deste celular.</Text>

@@ -55,7 +55,7 @@ export default function DocumentScreen() {
     ]);
 
   return (
-    <ScrollView style={{ backgroundColor: colors.bg }} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    <ScrollView contentInsetAdjustmentBehavior="automatic" automaticallyAdjustKeyboardInsets style={{ backgroundColor: colors.bg }} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       {!online && <Banner tone="warn" text="Consultas exigem o PC conectado com o cofre aberto." />}
       <Field label="Pergunte sobre este documento" value={question} onChangeText={setQuestion} placeholder="ex.: quais são os requisitos?" multiline />
       <View style={{ flexDirection: 'row', gap: space.md }}>

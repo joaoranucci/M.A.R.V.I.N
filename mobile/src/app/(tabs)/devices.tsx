@@ -70,7 +70,7 @@ export default function Devices() {
       <Text style={[type.title, styles.title]} accessibilityRole="header">
         Dispositivos
       </Text>
-      <ScrollView contentContainerStyle={styles.list} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} tintColor={colors.cyan} />}>
+      <ScrollView contentInsetAdjustmentBehavior="automatic" automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled" contentContainerStyle={styles.list} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} tintColor={colors.cyan} />}>
         <Card tone={availability.tone === 'ok' ? 'cyan' : undefined}>
           <View style={styles.headerRow}>
             <View style={styles.pcIcon}>

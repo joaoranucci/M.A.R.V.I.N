@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { AppState } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import { create } from 'zustand';
 import { onEvent, onResync } from '../../core/events/eventStream';
 import { log } from '../../core/logging/logger';
@@ -136,7 +136,7 @@ export async function startListening(): Promise<void> {
   const phase = get().phase;
   if (phase === 'listening' || phase === 'processing' || phase === 'executing') return;
   stopWake();
-  if (isSpeaking()) stopSpeaking();
+  await stopSpeaking();
   const availability = recognitionAvailability();
   if (!availability.available) {
     set({ notice: { tone: 'warn', text: availability.reason ?? 'Reconhecimento de fala indisponível.', action: 'keyboard' } });
@@ -149,7 +149,7 @@ export async function startListening(): Promise<void> {
       notice: {
         tone: 'warn',
         text: permission === 'blocked'
-          ? 'O microfone está bloqueado para o MARVIN. Permita em Configurações do Android ou use “Digitar”.'
+          ? 'O microfone ou o reconhecimento de fala está bloqueado. Permita nos ajustes do aparelho ou use “Digitar”.'
           : 'Preciso do microfone para ouvir você. Você também pode digitar.',
         action: permission === 'blocked' ? 'open-settings' : 'keyboard',
       },
@@ -502,7 +502,7 @@ onResync(async () => {
 
 // ---- interruptions (calls, focus loss, headphones) ---------------------------------------
 const interruptionText: Record<InterruptionReason, string> = {
-  call: 'Chamada em andamento: pausei a voz e a escuta.',
+  call: 'Chamada ou interrupção do sistema: pausei a voz e a escuta.',
   focus_lost: 'Outro app assumiu o áudio: interrompi.',
   headphones_removed: 'Fone desconectado: interrompi a fala para não tocar no alto-falante.',
 };
@@ -545,6 +545,7 @@ export interface WakeSupport {
 }
 
 export function wakeWordSupport(): WakeSupport {
+  if (Platform.OS === 'ios') return { supported: false, reason: 'No iPhone, toque no núcleo para falar. Esta versão não mantém escuta por “Marvin” em segundo plano nem com o app encerrado.' };
   const availability = recognitionAvailability();
   if (!availability.available) return { supported: false, reason: availability.reason };
   if (!availability.onDevice) {
@@ -603,6 +604,7 @@ async function runWake() {
 }
 
 export function setWakeWord(enabled: boolean) {
+  if (enabled && !wakeWordSupport().supported) return;
   void settings().update({ wakeWordEnabled: enabled });
   if (enabled) scheduleWake(200);
   else stopWake();

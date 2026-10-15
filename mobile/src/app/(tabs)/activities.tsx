@@ -103,7 +103,7 @@ function Personal() {
       <Button label="Adicionar" icon="add" variant="primary" onPress={() => void add()} disabled={!title.trim()} />
       {message && <Banner tone="warn" text={message} />}
       {notifications === 'denied' && (
-        <Banner tone="warn" text="Notificações desativadas: lembretes só aparecem dentro do app. O Android também pode atrasar alarmes para economizar bateria.">
+        <Banner tone="warn" text="Notificações desativadas: lembretes só aparecem dentro do app. O sistema pode limitar ou adiar avisos conforme suas configurações.">
           <Button label="Abrir configurações" compact onPress={() => void Linking.openSettings()} style={{ alignSelf: 'flex-start' }} />
         </Banner>
       )}

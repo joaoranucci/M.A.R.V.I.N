@@ -5,7 +5,7 @@ import { File, Paths } from 'expo-file-system';
 import * as Notifications from 'expo-notifications';
 import * as Sharing from 'expo-sharing';
 import { useCallback, useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { isNativeAvailable, MarvinNative } from '../../../modules/marvin-native';
 import { Button, Card, SectionTitle } from '../../components/ui';
 import { recentLogs } from '../../core/logging/logger';
@@ -42,8 +42,9 @@ export default function Diagnostics() {
     ]);
     setLines([
       { k: 'App', v: `${Application.nativeApplicationVersion} (${Application.nativeBuildVersion})` },
-      { k: 'Aparelho', v: `${Device.manufacturer ?? ''} ${Device.modelName ?? ''} · Android ${Device.osVersion ?? '?'}` },
+      { k: 'Aparelho', v: `${Device.manufacturer ?? ''} ${Device.modelName ?? ''} · ${Device.osName ?? Platform.OS} ${Device.osVersion ?? '?'}` },
       { k: 'Módulo nativo', v: isNativeAvailable ? 'ativo' : 'ausente (TLS do gateway e áudio indisponíveis)' },
+      { k: 'Transporte do gateway', v: MarvinNative.hasSecureTransport(Platform.OS === 'ios' ? 'ios' : 'android') ? 'pin verificado por requisição' : 'indisponível; atualize a build' },
       { k: 'Certificados fixados', v: String(MarvinNative.getPinnedKeys().length) },
       { k: 'Computador', v: connection ? `${connection.serverName} · ${connection.host}:${connection.port}` : 'não vinculado' },
       { k: 'Impressão digital', v: connection ? displayFingerprint(connection.pin) : '-' },
@@ -87,7 +88,7 @@ export default function Diagnostics() {
   };
 
   return (
-    <ScrollView style={{ backgroundColor: colors.bg }} contentContainerStyle={styles.content}>
+    <ScrollView contentInsetAdjustmentBehavior="automatic" automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.bg }} contentContainerStyle={styles.content}>
       <View style={{ flexDirection: 'row', gap: space.md }}>
         <Button label="Testar conexão" icon="refresh" onPress={() => void test()} loading={busy} style={{ flex: 1 }} />
         <Button label="Compartilhar" icon="share-outline" onPress={() => void share()} style={{ flex: 1 }} />

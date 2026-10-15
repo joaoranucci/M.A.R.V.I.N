@@ -36,7 +36,7 @@ export default function SettingsIndex() {
   };
 
   return (
-    <ScrollView style={{ backgroundColor: colors.bg }} contentContainerStyle={styles.content}>
+    <ScrollView contentInsetAdjustmentBehavior="automatic" automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.bg }} contentContainerStyle={styles.content}>
       <Row icon="volume-high-outline" title="Voz e fala" subtitle="Voz masculina, velocidade, volume, reconhecimento" onPress={() => router.push('/settings/voice')} />
       <Row icon="link-outline" title="Conexão com o PC" subtitle={connection ? `${connection.serverName} · ${connection.host}:${connection.port}` : 'Nenhum computador vinculado'} onPress={() => router.push('/settings/connection')} />
       <Row icon="shield-outline" title="Dados e privacidade" subtitle="Armazenamento local, histórico, sessão" onPress={() => router.push('/settings/storage')} />

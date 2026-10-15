@@ -50,7 +50,7 @@ export default function Share() {
   };
 
   return (
-    <ScrollView style={{ backgroundColor: colors.bg }} contentContainerStyle={styles.content}>
+    <ScrollView contentInsetAdjustmentBehavior="automatic" automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.bg }} contentContainerStyle={styles.content}>
       {files.map((file) => (
         <Card key={file.name + file.size}>
           <Text style={type.label}>{file.name}</Text>

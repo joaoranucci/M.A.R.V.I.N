@@ -44,7 +44,7 @@ final class MarvinAudioSession {
   }
 
   private func configure() throws {
-    var options: AVAudioSession.CategoryOptions = [.allowBluetooth, .allowBluetoothA2DP]
+    var options: AVAudioSession.CategoryOptions = [.allowBluetooth, .allowBluetoothA2DP, .allowAirPlay]
     if preferred != "earpiece" { options.insert(.defaultToSpeaker) }
     try session.setCategory(.playAndRecord, mode: kind == "listen" ? .measurement : .default, options: options)
     try session.setActive(true)

@@ -1,0 +1,66 @@
+name: Mobile Android and iOS
+on:
+  push:
+    branches: [main, 'codex/ios-first-release']
+    paths: ['mobile/**', '.github/workflows/mobile.yml', 'docs/mobile/**']
+  pull_request:
+    paths: ['mobile/**', '.github/workflows/mobile.yml', 'docs/mobile/**']
+permissions:
+  contents: read
+concurrency:
+  group: mobile-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - run: npx expo install --check
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npx expo-doctor
+      - name: Bundle iOS
+        run: npx expo export --platform ios --max-workers 2 --output-dir dist/ios
+      - name: Bundle Android
+        run: npx expo export --platform android --max-workers 2 --output-dir dist/android
+  ios-core:
+    runs-on: macos-26
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - name: Xcode and Swift versions
+        run: |
+          xcodebuild -version
+          swift --version
+      - name: Start ephemeral TLS fixtures
+        run: |
+          python3 -m venv "$RUNNER_TEMP/marvin-python"
+          "$RUNNER_TEMP/marvin-python/bin/pip" install cryptography
+          "$RUNNER_TEMP/marvin-python/bin/python" scripts/ios_tls_fixtures.py --output "$RUNNER_TEMP/marvin-certs" --serve > "$RUNNER_TEMP/marvin-tls.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/marvin-tls.pid"
+          for attempt in $(seq 1 60); do
+            if test -f "$RUNNER_TEMP/marvin-certs/fixtures.json"; then break; fi
+            sleep 1
+          done
+          test -f "$RUNNER_TEMP/marvin-certs/fixtures.json"
+          echo "MARVIN_CERT_FIXTURES=$RUNNER_TEMP/marvin-certs" >> "$GITHUB_ENV"
+      - name: Compile and test native certificate and URLSession sources
+        run: swift test --package-path modules/marvin-native/ios
+      - name: Stop test servers
+        if: always()
+        run: |
+          if test -f "$RUNNER_TEMP/marvin-tls.pid"; then kill "$(cat "$RUNNER_TEMP/marvin-tls.pid")" || true; fi

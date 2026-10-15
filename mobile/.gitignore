@@ -43,3 +43,8 @@ yarn-error.*
 # build outputs
 /dist
 *.log
+
+# Native module test output
+modules/**/ios/.build/
+modules/**/ios/.swiftpm/
+ios-build.log

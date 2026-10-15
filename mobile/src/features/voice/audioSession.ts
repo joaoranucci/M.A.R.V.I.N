@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import { create } from 'zustand';
 import { MarvinNative, type AudioRoute, type AudioState } from '../../../modules/marvin-native';
 import { log } from '../../core/logging/logger';
@@ -47,7 +48,7 @@ export function startAudioSession(): void {
     apply(event);
     if (event.change !== 'loss' && event.change !== 'loss_transient') return;
     if (event.inCall) interrupt('call');
-    else if (!listening) interrupt('focus_lost');
+    else if (Platform.OS === 'ios' || !listening) interrupt('focus_lost');
   });
 }
 
@@ -62,7 +63,7 @@ export function acquireFocus(kind: 'speak' | 'listen'): boolean {
   const state = MarvinNative.getAudioState();
   apply(state);
   if (state.inCall) return false;
-  if (kind === 'listen') {
+  if (kind === 'listen' && Platform.OS === 'android') {
     // Android's recognizer service takes audio focus itself; requesting it here would
     // make its own focus request look like "another app" and abort the capture.
     listening = true;
@@ -84,4 +85,18 @@ export const routeLabel: Record<AudioRoute, string> = {
   bluetooth: 'Bluetooth',
   usb: 'Áudio USB',
   hdmi: 'HDMI',
+  airplay: 'AirPlay',
 };
+
+let preferred: 'system' | 'speaker' | 'earpiece' = 'system';
+
+export const preferredAudioRoute = () => preferred;
+
+export function selectAudioRoute(route: 'system' | 'speaker' | 'earpiece'): boolean {
+  const changed = MarvinNative.setPreferredAudioRoute(route);
+  if (changed) {
+    preferred = route;
+    apply(MarvinNative.getAudioState());
+  }
+  return changed;
+}
