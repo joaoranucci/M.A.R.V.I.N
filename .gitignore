@@ -17,3 +17,6 @@ python-*-amd64.exe
 desktop/dist/
 desktop/test-results/
 desktop/playwright-report/
+
+# Generated Gradle output from local Expo modules
+/mobile/modules/**/android/build/

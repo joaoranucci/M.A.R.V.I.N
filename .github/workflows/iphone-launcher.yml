@@ -2,9 +2,9 @@ name: iPhone packaging launcher checks
 on:
   push:
     branches: [main]
-    paths: ['GERAR_IPHONE.bat', 'scripts/build-iphone.ps1', '.github/workflows/iphone-launcher.yml']
+    paths: ['GERAR_IPHONE.bat', 'scripts/build-iphone.ps1', '.gitignore', '.github/workflows/iphone-launcher.yml']
   pull_request:
-    paths: ['GERAR_IPHONE.bat', 'scripts/build-iphone.ps1', '.github/workflows/iphone-launcher.yml']
+    paths: ['GERAR_IPHONE.bat', 'scripts/build-iphone.ps1', '.gitignore', '.github/workflows/iphone-launcher.yml']
   workflow_dispatch:
 permissions:
   contents: read
