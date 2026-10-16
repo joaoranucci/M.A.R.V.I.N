@@ -7,6 +7,11 @@ appId: dev.marvin.mobile
 - assertNotVisible: "Mensagem para o MARVIN"
 - takeScreenshot: "01-main"
 - tapOn: "Digitar"
+# A fresh iOS Simulator may show the system keyboard introduction on first focus.
+- tapOn:
+    text: "Continue|Continuar"
+    optional: true
+    retryTapIfNoChange: true
 - assertVisible: "Mensagem para o MARVIN"
 - tapOn: "Mensagem para o MARVIN"
 - inputText: "teste de teclado"
