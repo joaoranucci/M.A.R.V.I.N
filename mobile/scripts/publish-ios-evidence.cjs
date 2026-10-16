@@ -7,8 +7,13 @@ const directory = process.argv[2];
 const repository = process.env.GITHUB_REPOSITORY;
 if (repository !== 'joaoranucci/M.A.R.V.I.N') throw new Error('Unexpected repository.');
 const result = {};
-for (const name of fs.readdirSync(directory).filter((name) => /^\d\d-[a-z-]+\.png$/.test(name))) {
-  const content = fs.readFileSync(path.join(directory, name)).toString('base64');
+for (const relative of fs.readdirSync(directory, { recursive: true })) {
+  const name = path.basename(relative);
+  if (!/^0[0-8]-[a-z-]+\.png$/.test(name)) continue;
+  const file = path.join(directory, relative);
+  if (!fs.statSync(file).isFile()) continue;
+  if (result[name]) throw new Error('Duplicate screenshot name: ' + name);
+  const content = fs.readFileSync(file).toString('base64');
   const response = JSON.parse(execFileSync('gh', ['api', '--method', 'POST', 'repos/' + repository + '/git/blobs', '--input', '-'], {
     input: JSON.stringify({ content, encoding: 'base64' }), encoding: 'utf8',
   }));

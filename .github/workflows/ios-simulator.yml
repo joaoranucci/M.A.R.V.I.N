@@ -5,7 +5,12 @@ on:
       artifact_run_id:
         description: 'Mobile workflow run containing MARVIN-iOS-Simulator for these application sources'
         required: true
-        type: number
+        type: string
+  workflow_call:
+    inputs:
+      artifact_run_id:
+        required: true
+        type: string
   # Bootstrap this runner on the implementation branch using the existing verified build.
   # Remove the push trigger after recording the first simulator execution.
   push:
@@ -41,15 +46,16 @@ jobs:
           java-version: '17'
       - name: Verify the compiled artifact matches the application sources
         id: artifact
+        working-directory: ${{ github.workspace }}
         env:
           GH_TOKEN: ${{ github.token }}
-          SOURCE_RUN: ${{ inputs.artifact_run_id || 38805051545 }}
+          SOURCE_RUN: ${{ inputs.artifact_run_id || 38891500385 }}
         run: |
           case "$SOURCE_RUN" in
             ''|*[!0-9]*) echo "A numeric build run is required." >&2; exit 1 ;;
           esac
           SOURCE_SHA="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN" --jq .head_sha)"
-          if ! git diff --quiet "$SOURCE_SHA" HEAD -- mobile/src mobile/modules mobile/plugins mobile/assets 'mobile/*.json' 'mobile/*.js'; then
+          if ! git diff --quiet "$SOURCE_SHA" HEAD -- mobile/src mobile/modules mobile/plugins mobile/assets 'mobile/*.json' 'mobile/*.js' 'mobile/*.ts'; then
             echo "The application differs from this compiled artifact. Select a newer successful iOS build." >&2
             exit 1
           fi
@@ -78,7 +84,13 @@ jobs:
       - name: Validate screens, keyboard and cold/warm pairing links
         env:
           MAESTRO_DRIVER_STARTUP_TIMEOUT: '180000'
-        run: '"$MAESTRO_BIN" --device "$IOS_SIMULATOR_UDID" test --format junit --output "$RUNNER_TEMP/ios-evidence/results.xml" -e EVIDENCE_DIR="$RUNNER_TEMP/ios-evidence" .maestro/ios-smoke.yaml'
+        run: '"$MAESTRO_BIN" --device "$IOS_SIMULATOR_UDID" test --format junit --output "$RUNNER_TEMP/ios-evidence/results.xml" --test-output-dir "$RUNNER_TEMP/ios-evidence" --debug-output "$RUNNER_TEMP/ios-evidence" .maestro/ios-smoke.yaml'
+      - name: Capture the last simulator screen after a failed test
+        if: failure() && env.IOS_SIMULATOR_UDID != ''
+        continue-on-error: true
+        run: |
+          mkdir -p "$RUNNER_TEMP/ios-evidence"
+          xcrun simctl io "$IOS_SIMULATOR_UDID" screenshot "$RUNNER_TEMP/ios-evidence/00-final.png"
       - name: Make clean simulator screenshots available for visual review
         if: always() && github.event_name == 'push' && github.ref == 'refs/heads/codex/ios-first-release'
         continue-on-error: true

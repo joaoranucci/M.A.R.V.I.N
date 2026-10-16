@@ -135,59 +135,9 @@ jobs:
           retention-days: 14
   ios-ui:
     needs: [checks, ios-app]
-    runs-on: macos-26
-    timeout-minutes: 20
     permissions:
       contents: write
       actions: read
-    defaults:
-      run:
-        working-directory: mobile
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-      - uses: actions/download-artifact@v4
-        with:
-          name: MARVIN-iOS-Simulator
-          path: ${{ runner.temp }}/ios-app-artifact
-      - name: Install pinned Maestro CLI
-        run: |
-          curl -fLSs https://github.com/mobile-dev-inc/Maestro/releases/download/cli-2.11.0/maestro.zip -o "$RUNNER_TEMP/maestro.zip"
-          node -e "const f=require('fs'),c=require('crypto');if(c.createHash('sha256').update(f.readFileSync(process.argv[1])).digest('hex')!=='5384593cb4e7a106489e75a821d157dd43f4e438df6bc308b72e82c685e1283a')throw Error('Maestro checksum mismatch')" "$RUNNER_TEMP/maestro.zip"
-          unzip -q "$RUNNER_TEMP/maestro.zip" -d "$RUNNER_TEMP/maestro-cli"
-          MAESTRO_BIN="$(find "$RUNNER_TEMP/maestro-cli" -type f -path '*/bin/maestro' -print -quit)"
-          test -n "$MAESTRO_BIN"
-          chmod +x "$MAESTRO_BIN"
-          echo "MAESTRO_BIN=$MAESTRO_BIN" >> "$GITHUB_ENV"
-      - name: Boot an iPhone simulator and install the release app
-        run: |
-          unzip -q "$RUNNER_TEMP/ios-app-artifact/MARVIN-iOS-Simulator.zip" -d "$RUNNER_TEMP/ios-app"
-          node scripts/boot-ios-simulator.cjs "$RUNNER_TEMP/ios-app/MARVIN.app"
-          mkdir -p "$RUNNER_TEMP/ios-evidence"
-      - name: Validate screens, keyboard and cold/warm pairing links
-        env:
-          MAESTRO_DRIVER_STARTUP_TIMEOUT: '180000'
-        run: '"$MAESTRO_BIN" --device "$IOS_SIMULATOR_UDID" test --format junit --output "$RUNNER_TEMP/ios-evidence/results.xml" -e EVIDENCE_DIR="$RUNNER_TEMP/ios-evidence" .maestro/ios-smoke.yaml'
-      - name: Make clean simulator screenshots available for visual review
-        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/codex/ios-first-release'
-        continue-on-error: true
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          if test -d "$RUNNER_TEMP/ios-evidence"; then
-            node scripts/publish-ios-evidence.cjs "$RUNNER_TEMP/ios-evidence"
-          fi
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: MARVIN-iOS-UI-evidence
-          path: ${{ runner.temp }}/ios-evidence
-          retention-days: 14
+    uses: ./.github/workflows/ios-simulator.yml
+    with:
+      artifact_run_id: ${{ github.run_id }}
