@@ -1,0 +1,40 @@
+name: Inspect iOS simulator evidence
+on:
+  push:
+    branches: ['codex/ios-first-release']
+    paths: ['.github/workflows/inspect-ios-evidence.yml']
+permissions:
+  contents: read
+  actions: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: MARVIN-iOS-UI-evidence
+          github-token: ${{ github.token }}
+          run-id: 38896913319
+          path: evidence
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Inspect accessibility diagnostics
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs'), path = require('node:path');
+          for (const relative of fs.readdirSync('evidence', { recursive: true })) {
+            const file = path.join('evidence', relative);
+            if (!fs.statSync(file).isFile()) continue;
+            console.log('FILE ' + relative + ' ' + fs.statSync(file).size);
+            if (/\.(json|xml)$/.test(relative)) {
+              console.log('TEXT ' + relative + '\n' + fs.readFileSync(file, 'utf8').slice(0, 250000));
+            } else if (relative.endsWith('.log')) {
+              const content = fs.readFileSync(file, 'utf8');
+              for (const line of content.split('\n').filter(line => /Mensagem|Escreva|hierarchy|Hierarchy|textView|TextView|TextField/.test(line))) {
+                console.log(line.slice(0, 200000));
+              }
+            }
+          }
+          NODE
