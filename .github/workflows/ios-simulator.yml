@@ -11,8 +11,7 @@ on:
       artifact_run_id:
         required: true
         type: string
-  # Bootstrap this runner on the implementation branch using the existing verified build.
-  # Remove the push trigger after recording the first simulator execution.
+  # Initial simulator verification on the implementation branch; removed after recording evidence.
   push:
     branches: ['codex/ios-first-release']
     paths: ['.github/workflows/ios-simulator.yml']
@@ -20,7 +19,7 @@ permissions:
   contents: read
   actions: read
 concurrency:
-  group: ios-simulator-${{ github.ref }}
+  group: ios-simulator-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   ios-ui:
@@ -54,7 +53,15 @@ jobs:
           case "$SOURCE_RUN" in
             ''|*[!0-9]*) echo "A numeric build run is required." >&2; exit 1 ;;
           esac
-          SOURCE_SHA="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN" --jq .head_sha)"
+          SOURCE_METADATA="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN" --jq '[.head_sha, .event] | join(" ")')"
+          read -r SOURCE_SHA SOURCE_EVENT <<< "$SOURCE_METADATA"
+          if test "$SOURCE_RUN" = "$GITHUB_RUN_ID"; then
+            # The caller built this artifact from the same immutable checkout, including a PR merge commit.
+            SOURCE_SHA="$(git rev-parse HEAD)"
+          elif test "$SOURCE_EVENT" != push; then
+            echo "For a previous build, select a push run to preserve exact checkout provenance." >&2
+            exit 1
+          fi
           if ! git diff --quiet "$SOURCE_SHA" HEAD -- mobile/src mobile/modules mobile/plugins mobile/assets 'mobile/*.json' 'mobile/*.js' 'mobile/*.ts'; then
             echo "The application differs from this compiled artifact. Select a newer successful iOS build." >&2
             exit 1

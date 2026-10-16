@@ -4,14 +4,15 @@ appId: dev.marvin.mobile
     permissions:
       all: deny
 - assertVisible: "MARVIN"
-- assertNotVisible: "Escreva para o MARVIN"
+- assertNotVisible: "Mensagem para o MARVIN"
 - takeScreenshot: "01-main"
 - tapOn: "Digitar"
-- assertVisible: "Escreva para o MARVIN"
+- assertVisible: "Mensagem para o MARVIN"
+- tapOn: "Mensagem para o MARVIN"
 - inputText: "teste de teclado"
 - takeScreenshot: "02-keyboard"
 - tapOn: "Fechar teclado"
-- assertNotVisible: "Escreva para o MARVIN"
+- assertNotVisible: "Mensagem para o MARVIN"
 - tapOn: "Biblioteca"
 - assertVisible: "Documentos"
 - tapOn: "Memórias"
