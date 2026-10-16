@@ -11,10 +11,6 @@ on:
       artifact_run_id:
         required: true
         type: string
-  # Verify the full simulator flow on the implementation branch; remove this trigger after recording evidence.
-  push:
-    branches: ['codex/ios-first-release']
-    paths: ['.github/workflows/ios-simulator.yml']
 permissions:
   contents: read
   actions: read
@@ -48,7 +44,7 @@ jobs:
         working-directory: ${{ github.workspace }}
         env:
           GH_TOKEN: ${{ github.token }}
-          SOURCE_RUN: ${{ inputs.artifact_run_id || 38891500385 }}
+          SOURCE_RUN: ${{ inputs.artifact_run_id }}
         run: |
           case "$SOURCE_RUN" in
             ''|*[!0-9]*) echo "A numeric build run is required." >&2; exit 1 ;;

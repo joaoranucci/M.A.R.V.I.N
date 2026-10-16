@@ -52,6 +52,8 @@ O plugin declara rede local e mantém `NSAllowsArbitraryLoads=false`. Não desat
 
 A ausência do módulo de reconhecimento não derruba a inicialização JS. A ausência do transporte seguro informa indisponibilidade e exige uma build nativa atualizada.
 
+Para atualizar uma instalação Android existente, preserve a chave de assinatura original. Se passar a gerar pelo EAS, importe essa mesma chave em `npx eas-cli@latest credentials --platform android`. Uma assinatura diferente impede a atualização sobre o app instalado; não desinstale o app para contornar esse erro, pois isso pode apagar os dados locais. No iOS, mantenha a equipe e o bundle identifier já usados pela instalação.
+
 ## Gerar iOS pelo Windows com EAS
 
 O Windows pode solicitar builds e submissões na nuvem. Compilação local e simulador iOS exigem Mac/Xcode. **Expo Go não executa este projeto**; use development build ou prévia.
@@ -153,6 +155,8 @@ python3 -m venv /tmp/marvin-test-venv
 MARVIN_CERT_FIXTURES=/tmp/marvin-tls-fixtures swift test --package-path modules/marvin-native/ios
 ```
 
-As chaves/certificados dos testes são efêmeros. Para a UI, instale a `.app` do artefato em um simulador Mac, crie a pasta de saída e rode `maestro test -e EVIDENCE_DIR=/tmp/marvin-ui .maestro/ios-smoke.yaml`.
+As chaves/certificados dos testes são efêmeros. Para a UI, instale a `.app` do artefato em um simulador Mac, use Maestro CLI 2.11.0 e rode `maestro test --test-output-dir /tmp/marvin-ui .maestro/ios-smoke.yaml`. As imagens ficam na subpasta `takeScreenshot` do pacote de artefatos.
+
+Também é possível repetir uma build existente em **Actions › Run compiled iOS Simulator app › Run workflow**, informando `artifact_run_id`: o número de um run de **push** da CI Mobile que contenha `MARVIN-iOS-Simulator`. O workflow recusa a reutilização se os fontes do app tiverem mudado. A CI principal chama esse mesmo fluxo automaticamente com o artefato da própria compilação.
 
 Referências: [Expo Modules](https://docs.expo.dev/modules/module-api/), [links nativos](https://docs.expo.dev/router/advanced/native-intent/), [Speech 57](https://docs.expo.dev/versions/v57.0.0/sdk/speech/), [Audio 57](https://docs.expo.dev/versions/v57.0.0/sdk/audio/), [SecureStore 57](https://docs.expo.dev/versions/v57.0.0/sdk/securestore/), [distribuição interna](https://docs.expo.dev/build/internal-distribution/), [EAS Submit iOS](https://docs.expo.dev/submit/ios/), [TLS Apple](https://support.apple.com/en-us/103769).
