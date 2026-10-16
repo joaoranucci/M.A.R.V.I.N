@@ -16,7 +16,9 @@ O status de compilação, simulador e aparelho físico está separado em [IOS_VA
 
 ## Atualizar o Gateway no PC
 
-Atualize também os fontes do PC. No PowerShell, na instalação existente:
+Novas instalações por `INSTALAR.bat` incluem as dependências do Gateway por `requirements-desktop.txt`. Para atualizar uma instalação existente, atualize também os fontes do PC e instale o conjunto menor abaixo no ambiente já usado pelo MARVIN:
+
+No PowerShell:
 
 ```powershell
 Set-Location 'C:\M.A.R.V.I.N'
