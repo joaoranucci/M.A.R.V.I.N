@@ -4,7 +4,10 @@ import android.content.Context
 import android.util.Base64
 import com.facebook.react.modules.network.OkHttpClientFactory
 import com.facebook.react.modules.network.OkHttpClientProvider
+import java.io.IOException
 import java.net.InetSocketAddress
+import java.util.concurrent.TimeUnit
+import okhttp3.OkHttpClient
 import java.security.KeyStore
 import java.security.MessageDigest
 import java.security.cert.CertificateException
@@ -35,7 +38,7 @@ object MarvinTls {
   }
 
   fun setPins(context: Context, values: List<String>) {
-    val clean = values.filter { it.length in 40..64 }.toSet()
+    val clean = values.filter { Regex("^[A-Za-z0-9+/]{43}=$").matches(it) }.toSet()
     pins = clean
     context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putStringSet(KEY, clean).apply()
   }
@@ -95,6 +98,36 @@ object MarvinTls {
     })
   }
 
+  /** Dedicated gateway client: a system-trusted but unpinned certificate is still rejected before HTTP. */
+  fun gatewayClient(expectedPin: String, timeoutMs: Long): OkHttpClient {
+    require(expectedPin in pins) { "Gateway sem pin aceito" }
+    val trustManager = PinningTrustManager(systemTrustManager())
+    val context = SSLContext.getInstance("TLS").apply { init(null, arrayOf(trustManager), null) }
+    val defaultVerifier = HttpsURLConnection.getDefaultHostnameVerifier()
+    return OkHttpClientProvider.createClientBuilder()
+      .sslSocketFactory(context.socketFactory, trustManager)
+      .hostnameVerifier { host, session ->
+        val leaf = session.peerCertificates.firstOrNull() as? X509Certificate
+        isPinned(leaf) || defaultVerifier.verify(host, session)
+      }
+      .followRedirects(false)
+      .followSslRedirects(false)
+      .callTimeout(timeoutMs, TimeUnit.MILLISECONDS)
+      .connectTimeout(minOf(timeoutMs, 10000L), TimeUnit.MILLISECONDS)
+      .readTimeout(timeoutMs, TimeUnit.MILLISECONDS)
+      .writeTimeout(timeoutMs, TimeUnit.MILLISECONDS)
+      .addNetworkInterceptor { chain ->
+        val leaf = chain.connection()?.handshake()?.peerCertificates?.firstOrNull() as? X509Certificate
+        if (leaf == null || expectedPin !in pins ||
+          !MessageDigest.isEqual(expectedPin.toByteArray(Charsets.US_ASCII), pinOf(leaf).toByteArray(Charsets.US_ASCII))) {
+          throw IOException("Impressão digital do gateway não confere")
+        }
+        leaf.checkValidity()
+        chain.proceed(chain.request())
+      }
+      .build()
+  }
+
   /**
    * Reads the certificate presented at host:port without sending any request,
    * so the user can compare its fingerprint with the one shown on the PC.
@@ -118,6 +151,7 @@ object MarvinTls {
       socket.startHandshake()
     }
     val cert = captured ?: throw CertificateException("Nenhum certificado recebido")
+    cert.checkValidity()
     return mapOf(
       "pin" to pinOf(cert),
       "subject" to cert.subjectX500Principal.name,

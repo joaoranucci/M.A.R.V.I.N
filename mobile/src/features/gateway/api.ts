@@ -1,20 +1,22 @@
+import { Platform } from 'react-native';
+import type { GatewayUpload } from './transport/types';
 import { z } from 'zod';
 import { noteServerTime, request } from './client';
 import * as S from './schemas';
 
 export const gateway = {
-  async health(base?: { host: string; port: number }) {
+  async health(base?: { host: string; port: number; pin: string }) {
     const started = Date.now();
     const data = await request('/v1/health', { schema: S.Health, auth: false, base, timeoutMs: 6000 });
     noteServerTime(data.server_time, started);
     return data;
   },
-  pair: (base: { host: string; port: number }, code: string, deviceName: string, appVersion: string) =>
+  pair: (base: { host: string; port: number; pin: string }, code: string, deviceName: string, appVersion: string) =>
     request('/v1/pair', {
       method: 'POST',
       base,
       auth: false,
-      body: { code, device_name: deviceName, platform: 'android', app_version: appVersion },
+      body: { code, device_name: deviceName, platform: Platform.OS, app_version: appVersion },
       schema: S.PairResponse,
     }),
   capabilities: () => request('/v1/capabilities', { schema: S.Capabilities }),
@@ -57,8 +59,8 @@ export const gateway = {
   deleteMemory: (id: string) => request(`/v1/memories/${encodeURIComponent(id)}`, { method: 'DELETE' }),
 
   documents: () => request('/v1/documents', { schema: z.array(S.Document), timeoutMs: 20000 }),
-  upload: (form: FormData) =>
-    request('/v1/documents', { method: 'POST', form, schema: S.Upload, timeoutMs: 180000 }),
+  upload: (upload: GatewayUpload) =>
+    request('/v1/documents', { method: 'POST', upload, schema: S.Upload, timeoutMs: 180000 }),
   uploadState: (id: string) => request(`/v1/documents/uploads/${encodeURIComponent(id)}`, { schema: S.Upload }),
   deleteDocument: (id: string) =>
     request(`/v1/documents/${encodeURIComponent(id)}`, { method: 'DELETE', headers: { 'X-Confirm-Delete': 'yes' } }),

@@ -55,9 +55,12 @@ export async function loadItems(): Promise<Item[]> {
 export async function notificationStatus(request: boolean): Promise<NotificationStatus> {
   let permission = await Notifications.getPermissionsAsync();
   if (permission.status !== 'granted' && request && permission.canAskAgain) permission = await Notifications.requestPermissionsAsync();
+  const allowed = permission.granted || (Platform.OS === 'ios' &&
+    (permission.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL ||
+     permission.ios?.status === Notifications.IosAuthorizationStatus.EPHEMERAL));
   // Android reports "denied" before the first prompt; only a refusal that blocks asking again counts as denied.
   const value: NotificationStatus =
-    permission.status === 'granted' ? 'granted' : permission.status === 'denied' && !permission.canAskAgain ? 'denied' : 'undetermined';
+    allowed ? 'granted' : permission.status === 'denied' && !permission.canAskAgain ? 'denied' : 'undetermined';
   useItems.setState({ notifications: value });
   return value;
 }
@@ -81,7 +84,7 @@ async function schedule(item: Item, askPermission = true): Promise<string | null
   await ensureChannel();
   return Notifications.scheduleNotificationAsync({
     content: { title: 'MARVIN · lembrete', body: item.title, data: { itemId: item.id } },
-    trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: when, channelId: 'lembretes' },
+    trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: when, ...(Platform.OS === 'android' ? { channelId: 'lembretes' } : {}) },
   });
 }
 
@@ -145,7 +148,7 @@ export async function saveItem(input: Partial<Item> & { kind: ItemKind; title: s
         notificationIssue =
           new Date(item.due_at).getTime() <= Date.now()
             ? 'O horário já passou.'
-            : 'Notificações desativadas: o lembrete aparece apenas dentro do app. Ative em Configurações do Android.';
+            : 'Notificações desativadas: o lembrete aparece apenas dentro do app. Ative nos ajustes de notificações do aparelho.';
       }
     } catch (error) {
       notificationIssue = 'Não foi possível agendar a notificação neste aparelho.';

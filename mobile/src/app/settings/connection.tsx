@@ -49,7 +49,7 @@ export default function ConnectionSettings() {
 
   if (!connection) {
     return (
-      <ScrollView style={{ backgroundColor: colors.bg }} contentContainerStyle={styles.content}>
+      <ScrollView contentInsetAdjustmentBehavior="automatic" automaticallyAdjustKeyboardInsets style={{ backgroundColor: colors.bg }} contentContainerStyle={styles.content}>
         <Banner tone="info" text="Nenhum computador vinculado. Sem vínculo, memórias, tarefas e notas funcionam só neste aparelho." />
         <Button label="Vincular computador" icon="qr-code-outline" variant="primary" onPress={() => router.push('/pair')} />
       </ScrollView>
@@ -57,7 +57,7 @@ export default function ConnectionSettings() {
   }
 
   return (
-    <ScrollView style={{ backgroundColor: colors.bg }} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    <ScrollView contentInsetAdjustmentBehavior="automatic" automaticallyAdjustKeyboardInsets style={{ backgroundColor: colors.bg }} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <Card tone={availability.tone === 'ok' ? 'cyan' : availability.tone === 'warn' ? 'amber' : undefined}>
         <Text style={type.label}>{availability.label}</Text>
         {!!availability.detail && <Text style={type.caption}>{availability.detail}</Text>}

@@ -66,7 +66,7 @@ class Gateway:
 
     def _uvicorn(self):
         import uvicorn
-        cert, key, self.pin = ensure_identity(self.config.directory, self.config.server_name)
+        cert, key, self.pin = ensure_identity(self.config.directory, self.config.server_name, self.config.advertise_host)
         config = uvicorn.Config(self.app, host=self.config.host, port=self.config.port, ssl_certfile=str(cert),
                                 ssl_keyfile=str(key), access_log=False, log_level="warning", timeout_keep_alive=30)
         return uvicorn.Server(config)
@@ -92,6 +92,6 @@ class Gateway:
 
     def describe(self) -> str:
         if not self.pin:
-            _, _, self.pin = ensure_identity(self.config.directory, self.config.server_name)
+            _, _, self.pin = ensure_identity(self.config.directory, self.config.server_name, self.config.advertise_host)
         return (f"Gateway mobile em https://{self.config.advertised()}:{self.config.port} "
                 f"· impressão digital {display_fingerprint(self.pin)}")

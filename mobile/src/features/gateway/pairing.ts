@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import * as Application from 'expo-application';
 import * as Device from 'expo-device';
 import { MarvinNative } from '../../../modules/marvin-native';
@@ -11,16 +12,25 @@ import { gateway } from './api';
 import { GatewayError } from './client';
 
 export function deviceName(): string {
-  return `MARVIN Mobile · ${Device.modelName ?? 'Android'}`.slice(0, 80);
+  return `MARVIN Mobile · ${Device.modelName ?? (Platform.OS === 'ios' ? 'iPhone' : 'Android')}`.slice(0, 80);
 }
 
 /**
  * Pins the certificate received out-of-band, checks the server identity and exchanges
  * the one-time code for a device token stored in the secure store.
  */
+let pairingActive = false;
+
 export async function pairWith(payload: PairingPayload): Promise<void> {
+  if (pairingActive) throw new GatewayError('http', 'Aguarde o pareamento em andamento terminar.');
+  pairingActive = true;
+  try { await performPairing(payload); }
+  finally { pairingActive = false; }
+}
+
+async function performPairing(payload: PairingPayload): Promise<void> {
   const previous = connectionInfo().connection;
-  const base = { host: payload.host, port: payload.port };
+  const base = { host: payload.host, port: payload.port, pin: payload.pin };
   MarvinNative.setPinnedKeys(previous ? [previous.pin, payload.pin] : [payload.pin]);
   try {
     const health = await gateway.health(base);

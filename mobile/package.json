@@ -8,6 +8,7 @@
     "@shopify/react-native-skia": "2.6.2",
     "expo": "~57.0.30",
     "expo-application": "~57.0.3",
+    "expo-asset": "~57.0.20",
     "expo-audio": "~57.0.5",
     "expo-build-properties": "~57.0.22",
     "expo-camera": "~57.0.6",
@@ -32,6 +33,7 @@
     "expo-status-bar": "~57.0.1",
     "expo-system-ui": "~57.0.4",
     "react": "19.2.3",
+    "react-dom": "19.2.3",
     "react-native": "0.86.3",
     "react-native-gesture-handler": "~2.32.0",
     "react-native-reanimated": "4.5.1",
@@ -42,16 +44,27 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
+    "@react-native/metro-config": "0.86.3",
     "@types/react": "~19.2.2",
+    "eslint": "^9.39.5",
+    "eslint-config-expo": "~57.0.2",
     "typescript": "~6.0.3"
   },
   "scripts": {
     "start": "expo start --dev-client",
     "android": "expo run:android",
-    "prebuild": "expo prebuild -p android",
+    "prebuild": "expo prebuild",
     "typecheck": "tsc --noEmit",
-    "test": "node --test src/features/assistant/nlp/nlp.test.ts",
-    "apk:preview": "powershell -ExecutionPolicy Bypass -File scripts/build-apk.ps1"
+    "test": "node --test src/features/assistant/nlp/nlp.test.ts src/features/assistant/nlp/pairing.test.ts src/features/gateway/transport/policy.test.ts plugins/withMarvinIOS.test.cjs",
+    "apk:preview": "powershell -ExecutionPolicy Bypass -File scripts/build-apk.ps1",
+    "ios": "expo run:ios",
+    "lint": "expo lint",
+    "prebuild:android": "expo prebuild --platform android",
+    "prebuild:ios": "expo prebuild --platform ios"
   },
-  "private": true
+  "private": true,
+  "allowScripts": {
+    "@shopify/react-native-skia@2.6.2": true,
+    "unrs-resolver@1.12.2": true
+  }
 }

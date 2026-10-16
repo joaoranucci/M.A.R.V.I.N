@@ -1,7 +1,7 @@
 import * as Application from 'expo-application';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, Platform, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { Button, Field, Row, Segmented, SectionTitle } from '../../components/ui';
 import { reloadLocalData } from '../../core/bootstrap';
 import { useConnectionInfo } from '../../core/security/credentials';
@@ -36,7 +36,7 @@ export default function SettingsIndex() {
   };
 
   return (
-    <ScrollView style={{ backgroundColor: colors.bg }} contentContainerStyle={styles.content}>
+    <ScrollView contentInsetAdjustmentBehavior="automatic" automaticallyAdjustKeyboardInsets style={{ backgroundColor: colors.bg }} contentContainerStyle={styles.content}>
       <Row icon="volume-high-outline" title="Voz e fala" subtitle="Voz masculina, velocidade, volume, reconhecimento" onPress={() => router.push('/settings/voice')} />
       <Row icon="link-outline" title="Conexão com o PC" subtitle={connection ? `${connection.serverName} · ${connection.host}:${connection.port}` : 'Nenhum computador vinculado'} onPress={() => router.push('/settings/connection')} />
       <Row icon="shield-outline" title="Dados e privacidade" subtitle="Armazenamento local, histórico, sessão" onPress={() => router.push('/settings/storage')} />
@@ -70,7 +70,7 @@ export default function SettingsIndex() {
       )}
       {downloadNote && <Text style={type.caption}>{downloadNote}</Text>}
       <Text style={type.caption}>
-        Escuta com o app fechado ou em segundo plano ainda não está implementada (exige serviço em primeiro plano com notificação permanente e detecção local). No iOS não há suporte equivalente nesta versão.
+        {Platform.OS === 'ios' ? 'No iPhone, toque no núcleo para falar. O app não mantém escuta por nome em segundo plano ou quando está encerrado.' : 'A escuta por nome funciona somente com o app aberto e em primeiro plano. Para começar a falar, você também pode tocar no núcleo.'}
       </Text>
 
       <SectionTitle>Preferências</SectionTitle>

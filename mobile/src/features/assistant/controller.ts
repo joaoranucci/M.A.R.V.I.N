@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { AppState } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import { create } from 'zustand';
 import { onEvent, onResync } from '../../core/events/eventStream';
 import { log } from '../../core/logging/logger';
@@ -11,7 +11,7 @@ import { needsPreview, onCommandUpdate, queueCommandUntilOnline, sendCommand, ty
 import { gateway } from '../gateway/api';
 import { GatewayError } from '../gateway/client';
 import { Approval, type TApproval } from '../gateway/schemas';
-import { createMemory, originLabel, recall } from '../memory/service';
+import { createMemory, recall } from '../memory/service';
 import { gatewayProvider } from '../providers/gatewayProvider';
 import { demoProvider, localProvider } from '../providers/localProviders';
 import type { AssistantProvider } from '../providers/types';
@@ -132,11 +132,20 @@ export function interruptSpeech() {
 }
 
 // ---- listening --------------------------------------------------------------------------
+let requestingListen = false;
+
 export async function startListening(): Promise<void> {
+  if (requestingListen) return;
+  requestingListen = true;
+  try { await beginListening(); }
+  finally { requestingListen = false; }
+}
+
+async function beginListening(): Promise<void> {
   const phase = get().phase;
   if (phase === 'listening' || phase === 'processing' || phase === 'executing') return;
   stopWake();
-  if (isSpeaking()) stopSpeaking();
+  await stopSpeaking();
   const availability = recognitionAvailability();
   if (!availability.available) {
     set({ notice: { tone: 'warn', text: availability.reason ?? 'Reconhecimento de fala indisponível.', action: 'keyboard' } });
@@ -149,15 +158,16 @@ export async function startListening(): Promise<void> {
       notice: {
         tone: 'warn',
         text: permission === 'blocked'
-          ? 'O microfone está bloqueado para o MARVIN. Permita em Configurações do Android ou use “Digitar”.'
+          ? 'O microfone ou o reconhecimento de fala está bloqueado. Permita nos ajustes do aparelho ou use “Digitar”.'
           : 'Preciso do microfone para ouvir você. Você também pode digitar.',
         action: permission === 'blocked' ? 'open-settings' : 'keyboard',
       },
     });
     return;
   }
+  if (AppState.currentState !== 'active') return;
   if (!acquireFocus('listen')) {
-    set({ notice: { tone: 'warn', text: 'Há uma chamada em andamento. Tente quando ela terminar.' } });
+    set({ notice: { tone: 'warn', text: 'O áudio está ocupado ou interrompido pelo sistema. Tente novamente depois.' } });
     return;
   }
   haptic('tap');
@@ -502,7 +512,7 @@ onResync(async () => {
 
 // ---- interruptions (calls, focus loss, headphones) ---------------------------------------
 const interruptionText: Record<InterruptionReason, string> = {
-  call: 'Chamada em andamento: pausei a voz e a escuta.',
+  call: 'Chamada ou interrupção do sistema: pausei a voz e a escuta.',
   focus_lost: 'Outro app assumiu o áudio: interrompi.',
   headphones_removed: 'Fone desconectado: interrompi a fala para não tocar no alto-falante.',
 };
@@ -511,6 +521,7 @@ onInterruption((reason) => {
   const { phase } = get();
   if (phase === 'listening') {
     abortRecognition();
+    releaseFocus();
     rest();
     set({ notice: { tone: 'warn', text: interruptionText[reason] } });
   } else if (phase === 'speaking' || isSpeaking()) {
@@ -545,6 +556,7 @@ export interface WakeSupport {
 }
 
 export function wakeWordSupport(): WakeSupport {
+  if (Platform.OS === 'ios') return { supported: false, reason: 'No iPhone, toque no núcleo para falar. Esta versão não mantém escuta por “Marvin” em segundo plano nem com o app encerrado.' };
   const availability = recognitionAvailability();
   if (!availability.available) return { supported: false, reason: availability.reason };
   if (!availability.onDevice) {
@@ -603,6 +615,7 @@ async function runWake() {
 }
 
 export function setWakeWord(enabled: boolean) {
+  if (enabled && !wakeWordSupport().supported) return;
   void settings().update({ wakeWordEnabled: enabled });
   if (enabled) scheduleWake(200);
   else stopWake();

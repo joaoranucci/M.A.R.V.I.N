@@ -149,10 +149,6 @@ export async function uploadDocument(file: PickedFile, category: string): Promis
 }
 
 registerProcessor('document.upload', async (payload: { clientId: string; localId: string; uri: string; name: string; category: string; mimeType: string | null }) => {
-  const form = new FormData();
-  form.append('client_id', payload.clientId);
-  form.append('category', payload.category);
-  // The global fetch in SDK 57 is Expo's: it accepts expo-file-system File (a Blob), named after the kept copy.
   const file = new File(payload.uri);
   if (!file.exists) {
     const db = await getDb();
@@ -160,9 +156,11 @@ registerProcessor('document.upload', async (payload: { clientId: string; localId
     await loadDocuments();
     return;
   }
-  form.append('file', file);
   try {
-    const upload = await gateway.upload(form);
+    const upload = await gateway.upload({
+      file: { uri: file.uri, name: payload.name, mimeType: payload.mimeType ?? 'application/octet-stream' },
+      fields: { client_id: payload.clientId, category: payload.category },
+    });
     await applyUpload(payload.localId, upload);
   } catch (error) {
     if (error instanceof GatewayError && !error.retryable && error.kind === 'http') {

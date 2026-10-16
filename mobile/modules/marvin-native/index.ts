@@ -1,6 +1,6 @@
 import { requireOptionalNativeModule, type EventSubscription } from 'expo-modules-core';
 
-export type AudioRoute = 'speaker' | 'earpiece' | 'wired' | 'bluetooth' | 'usb' | 'hdmi';
+export type AudioRoute = 'speaker' | 'earpiece' | 'wired' | 'bluetooth' | 'usb' | 'hdmi' | 'airplay';
 
 export interface AudioState {
   outputs: AudioRoute[];
@@ -43,7 +43,25 @@ type Events = {
   onSharedFiles: (event: SharedPayload) => void;
 };
 
+export interface NativeHTTPRequest {
+  id: string;
+  url: string;
+  pin: string;
+  method: string;
+  headers: Record<string, string>;
+  body?: string;
+  upload?: { file: { uri: string; name: string; mimeType: string }; fields: Record<string, string> };
+  binary?: boolean;
+  timeoutMs: number;
+}
+
+export interface NativeHTTPResponse { status: number; body: string; binary: boolean }
+
 interface NativeModuleShape {
+  getTransportCapabilities?(): { http: string };
+  gatewayRequest?(options: NativeHTTPRequest): Promise<NativeHTTPResponse>;
+  cancelRequest?(id: string): void;
+  setPreferredAudioRoute?(route: 'system' | 'speaker' | 'earpiece'): boolean;
   setPinnedKeys(pins: string[]): void;
   getPinnedKeys(): string[];
   probeCertificate(host: string, port: number): Promise<CertificateProbe>;
@@ -62,6 +80,12 @@ export const isNativeAvailable = native != null;
 const FALLBACK_AUDIO: AudioState = { outputs: [], route: 'speaker', mode: 0, inCall: false, volume: 0, maxVolume: 0 };
 
 export const MarvinNative = {
+  hasSecureTransport: (platform: 'ios' | 'android'): boolean =>
+    native?.getTransportCapabilities?.().http === (platform === 'ios' ? 'urlsession-pinned-v1' : 'okhttp-pinned-v1'),
+  gatewayRequest: (options: NativeHTTPRequest): Promise<NativeHTTPResponse> =>
+    native?.gatewayRequest?.(options) ?? Promise.reject(new Error('Transporte seguro indisponível. Atualize a build nativa.')),
+  cancelRequest: (id: string) => native?.cancelRequest?.(id),
+  setPreferredAudioRoute: (route: 'system' | 'speaker' | 'earpiece'): boolean => native?.setPreferredAudioRoute?.(route) ?? false,
   setPinnedKeys: (pins: string[]) => native?.setPinnedKeys(pins),
   getPinnedKeys: (): string[] => native?.getPinnedKeys() ?? [],
   probeCertificate: (host: string, port: number): Promise<CertificateProbe> =>

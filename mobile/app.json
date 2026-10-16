@@ -10,7 +10,8 @@
     "backgroundColor": "#04070C",
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "dev.marvin.mobile"
+      "bundleIdentifier": "dev.marvin.mobile",
+      "buildNumber": "1"
     },
     "android": {
       "package": "dev.marvin.mobile",
@@ -39,9 +40,13 @@
       [
         "expo-speech-recognition",
         {
-          "microphonePermission": "O MARVIN usa o microfone somente quando você toca no núcleo ou ativa a escuta por “Marvin”.",
+          "microphonePermission": "O MARVIN usa o microfone quando você pede para falar.",
           "speechRecognitionPermission": "O MARVIN transcreve sua fala para entender o pedido.",
-          "androidSpeechServicePackages": ["com.google.android.googlequicksearchbox", "com.google.android.tts", "com.google.android.as"]
+          "androidSpeechServicePackages": [
+            "com.google.android.googlequicksearchbox",
+            "com.google.android.tts",
+            "com.google.android.as"
+          ]
         }
       ],
       [
@@ -88,11 +93,19 @@
         "expo-build-properties",
         {
           "android": {
-            "buildArchs": ["arm64-v8a", "x86_64"]
+            "buildArchs": [
+              "arm64-v8a",
+              "x86_64"
+            ]
+          },
+          "ios": {
+            "deploymentTarget": "16.4"
           }
         }
       ],
-      "./plugins/withShareIntent.js"
+      "./plugins/withShareIntent.js",
+      "expo-asset",
+      "./plugins/withMarvinIOS.js"
     ],
     "experiments": {
       "typedRoutes": true

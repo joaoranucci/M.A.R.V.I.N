@@ -27,6 +27,7 @@ import {
   type Item,
   type ItemKind,
 } from '../../features/tasks/service';
+import { useClock } from '../../core/useClock';
 import { colors, radius, space, type } from '../../theme/tokens';
 
 type Tab = 'personal' | 'ai' | 'desktop';
@@ -103,7 +104,7 @@ function Personal() {
       <Button label="Adicionar" icon="add" variant="primary" onPress={() => void add()} disabled={!title.trim()} />
       {message && <Banner tone="warn" text={message} />}
       {notifications === 'denied' && (
-        <Banner tone="warn" text="Notificações desativadas: lembretes só aparecem dentro do app. O Android também pode atrasar alarmes para economizar bateria.">
+        <Banner tone="warn" text="Notificações desativadas: lembretes só aparecem dentro do app. O sistema pode limitar ou adiar avisos conforme suas configurações.">
           <Button label="Abrir configurações" compact onPress={() => void Linking.openSettings()} style={{ alignSelf: 'flex-start' }} />
         </Banner>
       )}
@@ -122,8 +123,9 @@ function Personal() {
 }
 
 function ItemRow({ item }: { item: Item }) {
+  const now = useClock();
   const due = item.due_at ? new Date(item.due_at) : null;
-  const overdue = due && !item.done && due.getTime() < Date.now();
+  const overdue = due && !item.done && due.getTime() < now;
   const remove = () =>
     Alert.alert('Excluir?', item.title, [
       { text: 'Cancelar', style: 'cancel' },
@@ -151,7 +153,7 @@ function ItemRow({ item }: { item: Item }) {
           <View style={styles.chips}>
             <Chip label={KIND_LABEL[item.kind]} />
             {due && <Chip label={formatWhen(due)} tone={overdue ? 'amber' : 'cyan'} icon="time-outline" />}
-            {item.kind === 'reminder' && !item.notification_id && !item.done && due && due.getTime() > Date.now() && <Chip label="sem notificação" tone="amber" />}
+            {item.kind === 'reminder' && !item.notification_id && !item.done && due && due.getTime() > now && <Chip label="sem notificação" tone="amber" />}
             {item.sync_state === 'pending' && <Chip label="aguardando sincronizar" tone="muted" />}
             {item.sync_state === 'local_only' && <Chip label="só neste aparelho" tone="muted" />}
           </View>

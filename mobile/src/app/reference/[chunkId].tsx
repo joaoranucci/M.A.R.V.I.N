@@ -18,7 +18,7 @@ export default function Reference() {
       .catch((e: unknown) => setError(e instanceof Error ? e.message : 'Referência indisponível.'));
   }, [chunkId]);
   return (
-    <ScrollView style={{ backgroundColor: colors.bg }} contentContainerStyle={styles.content}>
+    <ScrollView contentInsetAdjustmentBehavior="automatic" automaticallyAdjustKeyboardInsets style={{ backgroundColor: colors.bg }} contentContainerStyle={styles.content}>
       {error && <Banner tone="error" text={error} />}
       {!chunk && !error && <ActivityIndicator color={colors.cyan} />}
       {chunk && (

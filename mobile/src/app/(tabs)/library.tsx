@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Platform, ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AnswerCard } from '../../components/AnswerCard';
 import { Banner, Button, Card, Chip, EmptyState, Field, Segmented, SectionTitle } from '../../components/ui';
@@ -18,11 +18,12 @@ type Tab = 'documents' | 'memories' | 'search';
 
 export default function Library() {
   const params = useLocalSearchParams<{ tab?: Tab }>();
-  const [tab, setTab] = useState<Tab>(params.tab ?? 'documents');
+  return <LibraryContent key={params.tab ?? 'documents'} initialTab={params.tab ?? 'documents'} />;
+}
+
+function LibraryContent({ initialTab }: { initialTab: Tab }) {
+  const [tab, setTab] = useState<Tab>(initialTab);
   const insets = useSafeAreaInsets();
-  useEffect(() => {
-    if (params.tab) setTab(params.tab);
-  }, [params.tab]);
   return (
     <View style={[styles.screen, { paddingTop: insets.top + space.md }]}>
       <Text style={[type.title, styles.title]} accessibilityRole="header">
@@ -83,7 +84,7 @@ function Documents() {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.list} refreshControl={<RefreshControl {...refresh} tintColor={colors.cyan} />}>
+    <ScrollView contentInsetAdjustmentBehavior="automatic" automaticallyAdjustKeyboardInsets contentContainerStyle={styles.list} refreshControl={<RefreshControl {...refresh} tintColor={colors.cyan} />}>
       <Card>
         <Text style={type.label}>Enviar documento</Text>
         <Text style={type.caption}>
@@ -91,7 +92,7 @@ function Documents() {
             ? `Formatos aceitos pelo PC: ${acceptedFormats().join(' ')} · até ${Math.round(caps.documents.max_bytes / 1048576)} MB.${caps.documents.ocr ? '' : ' PDF digitalizado (imagem) não funciona: o PC não tem OCR.'}`
             : 'Conecte ao PC uma vez para carregar os formatos aceitos.'}
         </Text>
-        <Text style={type.caption}>Você também pode compartilhar um arquivo com o MARVIN pelo menu do Android.</Text>
+        <Text style={type.caption}>{Platform.OS === 'ios' ? 'Use “Escolher arquivo” para escolher um arquivo no app Arquivos ou no iCloud Drive.' : 'Você também pode compartilhar um arquivo com o MARVIN pelo menu do Android.'}</Text>
         <View style={styles.chips}>
           {['geral', 'estudos', 'trabalho', 'projetos', 'pessoal'].map((c) => (
             <Pressable key={c} onPress={() => setCategory(c)} accessibilityRole="radio" accessibilityState={{ checked: category === c }}>
@@ -157,9 +158,9 @@ function Memories() {
   }, [all, query, category]);
   const categories = useMemo(() => [...new Set([...CATEGORIES, ...all.map((m) => m.category)])], [all]);
   return (
-    <ScrollView contentContainerStyle={styles.list} refreshControl={<RefreshControl {...refresh} tintColor={colors.cyan} />} keyboardShouldPersistTaps="handled">
+    <ScrollView contentInsetAdjustmentBehavior="automatic" automaticallyAdjustKeyboardInsets contentContainerStyle={styles.list} refreshControl={<RefreshControl {...refresh} tintColor={colors.cyan} />} keyboardShouldPersistTaps="handled">
       <Field label="Buscar memórias" value={query} onChangeText={setQuery} placeholder="ex.: estudar" returnKeyType="search" />
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+      <ScrollView contentInsetAdjustmentBehavior="automatic" automaticallyAdjustKeyboardInsets horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
         <Pressable onPress={() => setCategory(null)}>
           <Chip label="todas" tone={category === null ? 'cyan' : 'default'} />
         </Pressable>
@@ -226,7 +227,7 @@ function Search() {
     }
   };
   return (
-    <ScrollView contentContainerStyle={styles.list} keyboardShouldPersistTaps="handled">
+    <ScrollView contentInsetAdjustmentBehavior="automatic" automaticallyAdjustKeyboardInsets contentContainerStyle={styles.list} keyboardShouldPersistTaps="handled">
       {!online && <Banner tone="warn" text="A pesquisa usa a biblioteca do PC: conecte ao computador com o cofre aberto." />}
       <Field label="Pesquisar nos documentos" value={query} onChangeText={setQuery} placeholder="ex.: como o SQLite é protegido" onSubmitEditing={() => void run('search')} returnKeyType="search" />
       <View style={{ flexDirection: 'row', gap: space.md }}>

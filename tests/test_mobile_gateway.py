@@ -205,6 +205,18 @@ class GatewayTests(unittest.TestCase):
         stored = json.dumps(self.gateway.store.all("SELECT * FROM devices"))
         self.assertNotIn(first.json()["token"], stored)
 
+    def test_iphone_has_its_own_token_and_revocation_preserves_android(self):
+        code = self.gateway.pairing.create_code()["code"]
+        response = self.client.post("/v1/pair", json={"code": code, "device_name": "iPhone", "platform": "ios", "app_version": "0.1.0"})
+        self.assertEqual(response.status_code, 201, response.text)
+        ios_auth = {"Authorization": "Bearer " + response.json()["token"]}
+        self.assertNotEqual(ios_auth, self.auth)
+        self.assertEqual(self.client.get("/v1/capabilities", headers=ios_auth).status_code, 200)
+        self.assertEqual(self.client.get("/v1/events?after=0&wait=0", headers=ios_auth).status_code, 200)
+        self.assertEqual(self.client.delete("/v1/devices/self", headers=ios_auth).status_code, 204)
+        self.assertEqual(self.client.get("/v1/session", headers=ios_auth).status_code, 401)
+        self.assertEqual(self.client.get("/v1/session", headers=self.auth).status_code, 200)
+
     def test_code_invalidated_after_five_failures(self):
         code = self.gateway.pairing.create_code()["code"]
         wrong = "000000" if code != "000000" else "111111"
