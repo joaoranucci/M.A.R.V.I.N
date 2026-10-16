@@ -4,6 +4,26 @@ Base mantida: Expo **57.0.30**, React Native **0.86.3**, React **19.2.3**. O SDK
 
 O status de compilação, simulador e aparelho físico está separado em [IOS_VALIDACAO.md](IOS_VALIDACAO.md). Passar no TypeScript não equivale a validar um iPhone. A auditoria está em [IOS_DEPENDENCIAS.md](IOS_DEPENDENCIAS.md).
 
+## Gerar um instalavel para o seu iPhone
+
+**Este repositorio contem o aplicativo e o gerador; ainda nao ha um `.ipa` assinado ou link TestFlight entregue.** A build anterior foi para simulador e nao instala no iPhone.
+
+No Windows, atualize/baixe este repositorio inteiro, instale **Node.js 22.13 ou superior** e abra **[`GERAR_IPHONE.bat`](../../GERAR_IPHONE.bat)** na raiz do projeto:
+
+1. O atalho instala as dependencias e executa lint, typecheck e testes.
+2. Faca login na sua conta Expo quando a ferramenta solicitar e escolha/crie o projeto EAS.
+3. Cadastre seu iPhone: abra no **Safari do iPhone** o link ou QR mostrado pela CLI e conclua o cadastro.
+4. A CLI solicitara login no **Apple Developer Program ativo** e a equipe com acesso ao identificador `dev.marvin.mobile`. Inclua o seu iPhone no perfil de provisionamento.
+5. Aguarde a compilacao no EAS. **Somente quando terminar com sucesso**, abra o link de instalacao mostrado pela CLI no iPhone. O arquivo `.ipa` tambem fica nos detalhes dessa build no EAS.
+
+Esse fluxo usa o perfil **preview**: aplicativo com JavaScript embutido, sem servidor Metro. Ele nao envia automaticamente ao TestFlight/App Store. Somente aparelhos incluidos no provisionamento podem instalar a previa. Se ja cadastrou esse iPhone, execute `GERAR_IPHONE.bat -DeviceAlreadyRegistered` para pular o cadastro; na compilacao, confira se ele esta incluido.
+
+O login e a autenticacao em duas etapas acontecem nas ferramentas oficiais. Nao envie senha, codigo Apple, token Expo ou certificado por chat, nem os grave no GitHub. O comando `eas init` salva o project ID real no projeto local; preserve essa vinculacao para as proximas builds. O gerador nao apaga dados do MARVIN.
+
+**Pendente para gerar a primeira build assinada:** acesso ao projeto Expo/EAS, conta Apple Developer ativa com permissao de certificados/perfis para o bundle ID e UDID do iPhone no perfil. Sem essas etapas, nenhum `.ipa` instalavel sera produzido. Nao foi executada uma build assinada ou um teste em iPhone fisico nesta sessao.
+
+Referencia oficial: [EAS — distribuicao interna](https://docs.expo.dev/build/internal-distribution/). Para TestFlight e opcoes avancadas, consulte as secoes de assinatura abaixo.
+
 ## Implementação
 
 - Módulo Swift real: AVAudioSession, interrupções, rotas de saída, inspeção de certificado e HTTPS.

@@ -1,0 +1,39 @@
+name: iPhone packaging launcher checks
+on:
+  push:
+    branches: [main]
+    paths: ['GERAR_IPHONE.bat', 'scripts/build-iphone.ps1', '.github/workflows/iphone-launcher.yml']
+  pull_request:
+    paths: ['GERAR_IPHONE.bat', 'scripts/build-iphone.ps1', '.github/workflows/iphone-launcher.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  launcher-and-mobile:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Parse launcher with Windows PowerShell 5.1
+        shell: powershell
+        run: |
+          $parseTokens = $null
+          $parseErrors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            (Join-Path $env:GITHUB_WORKSPACE 'scripts/build-iphone.ps1'),
+            [ref]$parseTokens, [ref]$parseErrors
+          ) | Out-Null
+          if ($parseErrors.Count -gt 0) { throw ($parseErrors | Out-String) }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - run: npm ci --no-audit --no-fund
+        working-directory: mobile
+      - run: npm run lint
+        working-directory: mobile
+      - run: npm run typecheck
+        working-directory: mobile
+      - run: npm test
+        working-directory: mobile
