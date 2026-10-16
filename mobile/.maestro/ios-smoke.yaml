@@ -4,7 +4,7 @@ appId: dev.marvin.mobile
     permissions:
       all: deny
 - assertVisible: "MARVIN"
-- assertNotVisible: "Mensagem para o MARVIN"
+- assertNotVisible: "Mensagem para o MARVIN.*"
 - takeScreenshot: "01-main"
 - tapOn: "Digitar"
 # A fresh iOS Simulator may show the system keyboard introduction on first focus.
@@ -12,12 +12,12 @@ appId: dev.marvin.mobile
     text: "Continue|Continuar"
     optional: true
     retryTapIfNoChange: true
-- assertVisible: "Mensagem para o MARVIN"
-- tapOn: "Mensagem para o MARVIN"
+- assertVisible: "Mensagem para o MARVIN.*"
+- tapOn: "Mensagem para o MARVIN.*"
 - inputText: "teste de teclado"
 - takeScreenshot: "02-keyboard"
 - tapOn: "Fechar teclado"
-- assertNotVisible: "Mensagem para o MARVIN"
+- assertNotVisible: "Mensagem para o MARVIN.*"
 - tapOn: "Biblioteca"
 - assertVisible: "Documentos"
 - tapOn: "Memórias"

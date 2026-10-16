@@ -25,5 +25,15 @@ for (const relative of fs.readdirSync(directory, { recursive: true })) {
   }));
   previews[name] = preview.sha;
 }
+const diagnostics = {};
+for (const relative of fs.readdirSync(directory, { recursive: true })) {
+  if (!relative.includes('screen-hierarchy/') || !relative.endsWith('.json')) continue;
+  const file = path.join(directory, relative);
+  if (fs.statSync(file).size > 1048576) continue;
+  const response = JSON.parse(execFileSync('gh', ['api', '--method', 'POST', 'repos/' + repository + '/git/blobs', '--input', '-'], {
+    input: JSON.stringify({ content: fs.readFileSync(file, 'utf8'), encoding: 'utf-8' }), encoding: 'utf8',
+  }));
+  diagnostics[relative] = response.sha;
+}
 fs.writeFileSync(path.join(directory, 'screenshots.json'), JSON.stringify(result, null, 2) + '\n');
-console.log(JSON.stringify({ screenshots: result, previews }));
+console.log(JSON.stringify({ screenshots: result, previews, diagnostics }));
